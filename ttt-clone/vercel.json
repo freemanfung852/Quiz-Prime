@@ -3,9 +3,9 @@
   "cleanUrls": false,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/post/:slug", "destination": "/post/:slug.html" },
-    { "source": "/course/:slug", "destination": "/course/:slug.html" },
-    { "source": "/:page", "destination": "/:page.html" }
+    { "source": "/", "destination": "/traveltotransform.com/index.html" },
+    { "source": "/post/:slug", "destination": "/traveltotransform.com/post/:slug.html" },
+    { "source": "/course/:slug", "destination": "/traveltotransform.com/course/:slug.html" },
+    { "source": "/:page", "destination": "/traveltotransform.com/:page.html" }
   ]
 }

@@ -1,0 +1,19 @@
+# Secrets — NEVER commit (GHL PIT lives in macOS Keychain)
+*.env
+.env*
+*pit-*
+secrets*
+
+# Local visual editor (never commit per workspace rule)
+editor.js
+
+# Large media — videos are served from the live GHL CDN, not self-hosted
+*.mp4
+*.mov
+*.webm
+
+# OS / tooling
+.DS_Store
+node_modules/
+.vercel/
+.vercel
