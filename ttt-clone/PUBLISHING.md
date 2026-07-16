@@ -82,6 +82,31 @@ swaps the legacy GHL order widget after hydration. Form IDs live in that file:
 To change a form: edit the `FORMS` map in `ghl-order-forms.js`. Do NOT hand-edit
 the checkout HTML — the Vue app re-renders the widget and wipes static edits.
 
+### All other forms — `ghl-live-forms.js`
+
+Every other GHL form (Contact, Coaching, Masterclass, both Ebook opt-ins,
+Newsletter, Footer Newsletter, Speaking Booking, Pre-launch Sign Up, …) is
+embedded live by `ghl-live-forms.js`, loaded on all 33 pages that contain a form.
+
+**Why:** the scrape baked frozen copies of these forms into the HTML. They fed
+Freeman's automation workflows, but any edit made in GHL would never reach the
+clone. Now each form is loaded live from GHL, so it can never drift.
+
+**How it maps form → container without a per-page list:** the natively-rendered
+form gives its own id away — its fields carry DOM ids shaped
+`el_<formId>_<field>_<n>`. The script reads the formId back out of each `.c-form`
+container at runtime and swaps in that form's iframe. This is self-detecting, so
+it stays correct on every page and on any page cloned in future — nothing to
+maintain.
+
+Pages with two `.c-form` containers hold desktop + mobile variants of the same
+form; both are filled and CSS keeps one hidden (same as the order forms).
+
+Adding the script to a newly cloned page: inject
+`<script src="/ghl-live-forms.js"></script>` before the Nuxt entry script
+(`stcdn.leadconnectorhq.com/_preview/*.js`). Invariant to keep: **every page
+containing `class="c-form"` must load the script** — 33/33 today.
+
 Each form's **post-submit redirect is configured inside GHL**, not here. The
 thank-you pages are `/travel-mastery-blueprint-thank-you`,
 `/travel-mastery-blueprint-thankyou`, `/accelerator-thank-you-page`,
