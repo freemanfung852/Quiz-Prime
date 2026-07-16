@@ -60,11 +60,62 @@ Apply while WRITING the post (in GHL). The sync script cannot fix thin content.
 
 ```
 python3 tools/publish.py check     # audit: live catalog vs clone (run first)
-python3 tools/publish.py sync      # pull anything new + enhance everything
+python3 tools/publish.py sync      # pull anything new + enhance + sitemap
 python3 tools/publish.py enhance   # re-apply canonical + JSON-LD only
+python3 tools/publish.py sitemap   # regenerate sitemap.xml + robots.txt
 ```
 
 All idempotent. `sync` on an up-to-date clone changes nothing but re-verifies.
+
+## Order forms
+
+The 4 checkout pages carry GHL forms via `ghl-order-forms.js` (clone root), which
+swaps the legacy GHL order widget after hydration. Form IDs live in that file:
+
+| Page | GHL form | Price |
+|---|---|---|
+| `/tmb-offers-checkout` | Travel Mastery Blueprint | AU$999 |
+| `/tmb-offers-checkout-form` | TMB Offer (discounted) | AU$111 |
+| `/checkout-accelerator` | TMB + 1:1 Coaching Session | AU$2,999 |
+| `/checkout-accelerator-page` | TMB + 1:1 Coaching Offer (discounted) | AU$1,333 |
+
+To change a form: edit the `FORMS` map in `ghl-order-forms.js`. Do NOT hand-edit
+the checkout HTML — the Vue app re-renders the widget and wipes static edits.
+
+Each form's **post-submit redirect is configured inside GHL**, not here. The
+thank-you pages are `/travel-mastery-blueprint-thank-you`,
+`/travel-mastery-blueprint-thankyou`, `/accelerator-thank-you-page`,
+`/accelerator-thankyou-page`.
+
+## URL parity with the live site
+
+`vercel.json` reproduces live GoHighLevel's routing exactly, so every existing
+URL keeps working at cutover. Verified 83 URLs live-vs-clone (82 identical; the
+1 difference is the repo-authored Beyonder post, which live does not have).
+
+Non-obvious rules — do not remove:
+- `/home` → `index.html` (GHL serves the homepage at both `/` and `/home`)
+- `/page-not-found` → `404.html` (GHL's branded 404 lives at this path)
+- `/404`, `/index.html`, `/blogs`, `/media` → **301** to `/page-not-found` (live does this)
+- Root `404.html` is a **redirect stub**, not the branded page: Vercel serves it
+  for unmatched routes and it 301s to `/page-not-found`, matching live. It also
+  retries a lowercased path first, because live GHL is case-insensitive while
+  Vercel is not.
+
+## Cutover checklist (domain moves to Vercel)
+
+1. Set `CUTOVER = True` in `tools/publish.py`.
+2. Run `python3 tools/publish.py sitemap` → robots.txt flips from `Disallow: /`
+   to indexable and references the sitemap.
+3. `CANONICAL_DOMAIN` already equals `https://traveltotransform.com`, so
+   canonicals need no change — they simply stop being cross-domain. Re-run
+   `python3 tools/publish.py enhance` to confirm.
+4. Point the domain at the Vercel project (root directory `ttt-clone`).
+5. Verify: `/`, `/home`, `/page-not-found`, an unknown URL, all 4 checkouts, and
+   `/clone-map`. Confirm GHL form redirects land on the cloned thank-you pages.
+6. The live sitemap is an empty urlset today — after cutover, submit
+   `/sitemap.xml` in Google Search Console. This is the fix for buried pages like
+   Author Hour.
 
 ## Failure modes seen before (do not repeat)
 - **Editing listing grids by hand**: the Nuxt payload re-renders page 1 at

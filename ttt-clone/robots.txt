@@ -1,0 +1,5 @@
+# Staging mirror of traveltotransform.com — must not compete with
+# the live domain in search. Flip CUTOVER=True in tools/publish.py
+# and re-run `publish.py sitemap` when the domain moves here.
+User-agent: *
+Disallow: /

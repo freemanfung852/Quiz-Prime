@@ -8,12 +8,15 @@ date and applies the SEO/AEO/GEO layer the live site lacks.
 Usage (run from the repo/clone root, the folder containing vercel.json):
 
   python3 tools/publish.py sync      # detect + clone new posts, refresh
-                                     # catalogs/listings, enhance, update map
+                                     # catalogs/listings, enhance, update map,
+                                     # regenerate sitemap
   python3 tools/publish.py enhance   # (re)apply canonical + JSON-LD to every
                                      # cloned post page (idempotent)
+  python3 tools/publish.py sitemap   # regenerate sitemap.xml from cloned pages
   python3 tools/publish.py check     # audit: catalogs vs cloned files vs live
 
-After a sync: vercel deploy --prod  (project `site`; no git auto-deploy)
+After a sync: commit + push. Deploy is Freeman's own Vercel project
+(root directory `ttt-clone`).
 
 See PUBLISHING.md for the full playbook and the authoring checklist.
 """
@@ -28,6 +31,25 @@ CLONE = "https://site-six-khaki-48.vercel.app"
 # never competes with it in search. On domain cutover set this to the clone's
 # final domain and run `enhance`.
 CANONICAL_DOMAIN = LIVE
+
+# ---- CUTOVER SWITCH -------------------------------------------------------
+# False = staging: robots.txt disallows all (clone must not compete with the
+#         live domain in search).
+# True  = cutover: the clone IS traveltotransform.com. Flip this, then run
+#         `python3 tools/publish.py sitemap` and redeploy. Canonicals already
+#         point at CANONICAL_DOMAIN (the live domain), so they need no change.
+# Pages excluded from the sitemap either way (thank-yous, checkouts, system).
+CUTOVER = False
+SITEMAP_EXCLUDE = {
+    "404", "page-not-found", "maintenance-page", "clone-map",
+    "tmb-offers-checkout", "tmb-offers-checkout-form",
+    "checkout-accelerator", "checkout-accelerator-page",
+    "travel-mastery-blueprint-thank-you", "travel-mastery-blueprint-thankyou",
+    "accelerator-thank-you-page", "accelerator-thankyou-page",
+    "coaching-thank-you-page", "masterclass-thank-you",
+    "ebook-download-thankyou", "ebook-download-thank-you",
+    "result", "quiz-4272",
+}
 
 API = "https://backend.leadconnectorhq.com/blogs/posts/list"
 LOCATION = "pIQnJdASBmjOuDSHEr5v"
@@ -194,6 +216,63 @@ def clone_map_add(slug, title):
     return True
 
 
+def cmd_sitemap():
+    """Generate sitemap.xml + robots.txt from the cloned pages.
+
+    The live GHL site serves an EMPTY sitemap urlset — a real SEO bug that
+    likely contributes to buried pages (e.g. Author Hour) never being indexed.
+    The clone carries a real one, ready for cutover.
+    """
+    urls = []
+    for f in sorted(os.listdir(PAGES)):
+        if f.endswith(".html"):
+            name = f[:-5]
+            if name in SITEMAP_EXCLUDE:
+                continue
+            urls.append("/" if name == "index" else "/" + name)
+    for sub in ("post", "course"):
+        d = os.path.join(PAGES, sub)
+        if not os.path.isdir(d):
+            continue
+        for f in sorted(os.listdir(d)):
+            if f.endswith(".html"):
+                urls.append("/%s/%s" % (sub, f[:-5]))
+    # publish dates from the catalogs, where we have them
+    lastmod = {}
+    try:
+        for cid, (posts, _) in load_catalogs().items():
+            for p in posts:
+                d = (p.get("updatedAt") or p.get("publishedAt") or "")[:10]
+                if d:
+                    lastmod["/post/" + p["urlSlug"]] = d
+    except Exception:
+        pass
+
+    out = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for u in urls:
+        out.append("  <url>")
+        out.append("    <loc>%s%s</loc>" % (CANONICAL_DOMAIN, u))
+        if u in lastmod:
+            out.append("    <lastmod>%s</lastmod>" % lastmod[u])
+        out.append("    <priority>%s</priority>" % ("1.0" if u == "/" else "0.7"))
+        out.append("  </url>")
+    out.append("</urlset>")
+    open(os.path.join(ROOT, "sitemap.xml"), "w", encoding="utf-8").write("\n".join(out) + "\n")
+
+    if CUTOVER:
+        robots = ("User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n" % CANONICAL_DOMAIN)
+        mode = "CUTOVER (indexable)"
+    else:
+        robots = ("# Staging mirror of traveltotransform.com — must not compete with\n"
+                  "# the live domain in search. Flip CUTOVER=True in tools/publish.py\n"
+                  "# and re-run `publish.py sitemap` when the domain moves here.\n"
+                  "User-agent: *\nDisallow: /\n")
+        mode = "STAGING (noindex)"
+    open(os.path.join(ROOT, "robots.txt"), "w", encoding="utf-8").write(robots)
+    print("sitemap.xml: %d urls | robots.txt: %s" % (len(urls), mode))
+
+
 def load_catalogs():
     out = {}
     for cid in CATS:
@@ -245,8 +324,10 @@ def cmd_sync():
             if enhance_post(p["urlSlug"], p):
                 n += 1
     print(f"enhanced {n} post pages (canonical + JSON-LD)")
+    cmd_sitemap()
     if new:
-        print("\nNOW RUN:  vercel deploy --prod   (from the clone root)")
+        print("\nNOW RUN:  git add -A && git commit && git push"
+              "\n          (Freeman's Vercel project auto-deploys from ttt-clone)")
 
 
 def cmd_enhance():
@@ -288,5 +369,5 @@ def cmd_check():
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "check"
-    {"sync": cmd_sync, "enhance": cmd_enhance, "check": cmd_check}.get(
-        cmd, lambda: print(__doc__))()
+    {"sync": cmd_sync, "enhance": cmd_enhance, "check": cmd_check,
+     "sitemap": cmd_sitemap}.get(cmd, lambda: print(__doc__))()

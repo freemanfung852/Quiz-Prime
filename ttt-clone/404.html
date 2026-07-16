@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>404｜Travel to Transform</title>
+<meta name="robots" content="noindex">
+<!--
+  Unknown-URL handler. Vercel serves this file when no route in vercel.json
+  matches. The live GoHighLevel site 301-redirects any unknown URL to
+  /page-not-found (its branded 404 page); this reproduces that behaviour so the
+  clone matches live exactly.
+
+  It also retries a lowercased path first: live GHL is case-insensitive
+  (/TMB-Offers-Checkout works) while Vercel is case-sensitive, so a mixed-case
+  bookmark would otherwise die here. If the lowercased path differs, we send the
+  visitor there and let normal routing resolve it.
+
+  NOTE: this is the redirect stub, NOT the branded 404 page. The branded page is
+  traveltotransform.com/404.html, served at /page-not-found.
+-->
+<script>
+(function () {
+  var p = location.pathname;
+  var lower = p.toLowerCase();
+  if (lower !== p) {
+    location.replace(lower + location.search + location.hash);
+    return;
+  }
+  location.replace('/page-not-found');
+})();
+</script>
+<meta http-equiv="refresh" content="0; url=/page-not-found">
+</head>
+<body>
+<p>Redirecting to <a href="/page-not-found">Page Not Found</a>.</p>
+</body>
+</html>
