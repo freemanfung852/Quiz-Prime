@@ -34,6 +34,20 @@ LOCATION = "pIQnJdASBmjOuDSHEr5v"
 CATS = {  # categoryId: (label, blogId, listing page)
     "6878c4aaf07aa601cf0236d1": ("podcast", "OpmhkeQp4dBsYivBdh3U", "podcast.html"),
     "6878be8fe6774b079d931ef0": ("blog", "l4woPhjYfsvIZSfgW676", "blog.html"),
+    "687bdb9331c0ce7ef045ba10": ("book-reviews", "3hOLFO0CTHDXJcdYSv9s", "book-reviews.html"),
+}
+# Posts authored directly in the repo (not published in GHL) — appended to the
+# shim catalog so listings show them. Prefer publishing in GHL, then sync.
+MANUAL_POSTS = {
+    "6878c4aaf07aa601cf0236d1": [{
+        "_id": "manual-beyonder", "urlSlug": "beyonder-the-podcast-with-veerle-beelen",
+        "title": "Beyonder The Podcast with Veerle Beelen",
+        "description": "Tourist or Global Citizen? Freeman Fung on Beyonder The Podcast with Veerle Beelen.",
+        "imageUrl": "/assets/podcast/beyonder-the-podcast-freeman-fung-veerle-beelen-tourist-or-global-citizen.png",
+        "imageAltText": "Beyonder The Podcast with Veerle Beelen",
+        "author": {"name": "Freeman Fung"}, "categories": [], "tags": [],
+        "publishedAt": "2026-07-15T00:00:00.000Z", "updatedAt": "2026-07-15T00:00:00.000Z",
+    }],
 }
 FONT = ('<link rel="stylesheet" href="https://fonts.googleapis.com/css?family='
         'Poppins:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i|Inter:100,100i,'
@@ -184,7 +198,11 @@ def load_catalogs():
     out = {}
     for cid in CATS:
         posts, det = api_catalog(cid)
-        out[cid] = (slim(posts), det)
+        sl = slim(posts)
+        for extra in MANUAL_POSTS.get(cid, []):
+            if not any(p["urlSlug"] == extra["urlSlug"] for p in sl):
+                sl.append(extra)
+        out[cid] = (sl, det)
     return out
 
 
@@ -192,12 +210,14 @@ def cmd_sync():
     catalogs = load_catalogs()
     shim_src = open(SHIM, encoding="utf-8").read()
     new = []
+    manual_slugs = {m["urlSlug"] for ms in MANUAL_POSTS.values() for m in ms}
     for cid, (posts, _) in catalogs.items():
         label, _, listing = CATS[cid]
         for p in posts:
             slug = p["urlSlug"]
             p["_section"] = label
-            missing_file = not os.path.exists(os.path.join(PAGES, "post", slug + ".html"))
+            missing_file = (not os.path.exists(os.path.join(PAGES, "post", slug + ".html"))
+                            and slug not in manual_slugs)  # manual posts have no live page to scrape
             missing_shim = slug not in shim_src
             if missing_file or missing_shim:
                 new.append((cid, p, missing_file))

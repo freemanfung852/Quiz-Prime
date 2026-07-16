@@ -24,6 +24,7 @@ Every article — blog post or podcast episode — lives at a single canonical U
 /                       Home
 /blog                   Blog listing      → cards link to /post/<slug>
 /podcast                Podcast listing   → cards link to /post/<slug>
+/book-reviews           Book review listing → cards link to /post/<slug>
 /resources              Featured mix: podcast section + blog section + library
 /post/<slug>            The article itself (blog AND podcast episodes)
 /course/<slug>          Course pages (e.g. /course/tmb)
@@ -37,6 +38,7 @@ Every article — blog post or podcast episode — lives at a single canonical U
 2. Add its card to the right **listing page**:
    - Blog article → `traveltotransform.com/blog.html`
    - Podcast episode → `traveltotransform.com/podcast.html`
+   - Book review → `traveltotransform.com/book-reviews.html`
 3. If it should be featured, also add a card to the matching section of
    `traveltotransform.com/resources.html`.
 4. Add a row to `/clone-map` (`traveltotransform.com/clone-map.html`).
@@ -87,7 +89,7 @@ cards — always click through ALL pagination pages when auditing coverage.
 | Rethink Travelling | `/post/rethink-travelling` |
 | What is Global Citizenship | `/post/what-is-global-citizenship` |
 
-### Podcast episodes (21) — carded on `/podcast` (paginated, 6 per page) + featured on `/resources`
+### Podcast episodes (22) — carded on `/podcast` (paginated, 6 per page) + featured on `/resources`
 
 The `/podcast` listing paginates client-side: pages 2–4 are fetched at runtime from
 the GHL content API (`content.apisystem.tech`). This works on the clone too (the
@@ -116,6 +118,57 @@ clone's pagination calls the same live API). Only page 1 is baked into the HTML.
 | 19 | The Abundance & Success Codes Summit | `/post/the-abundance-success-codes-summit` |
 | 20 | Tuesday Talks with Zishan | `/post/tuesday-talks-with-zishan` |
 | 21 | Author Hour Podcast | `/post/author-hour-podcast` |
+| 22 | Beyonder The Podcast (Veerle Beelen) | `/post/beyonder-the-podcast-with-veerle-beelen` (repo-authored, not yet in GHL) |
+
+
+### Funnel, offer & system pages (28) — from the GHL funnels API
+
+Discovered via `GET services.leadconnectorhq.com/funnels/funnel/list` (16 funnels,
+50 steps). These are NOT linked from the main nav; enumerate funnels via the API
+when auditing coverage, never by crawling nav links.
+
+| Page | URL |
+|---|---|
+| Contact | `/contact` |
+| Media Contact | `/media-contact` |
+| Media Kit | `/media-kit` |
+| Maintenance Page | `/maintenance-page` |
+| Course: TMB Exclusive Event Offer | `/course/tmb-exclusive-offer-event-attendees` |
+| Course: Colive Fukuoka Exclusive | `/course/colive-fukuoka-25-exclusive` |
+| Da Nang Nomad Fest | `/dnf-free` |
+| Nomad Fest Thank You | `/ebook-download-thankyou` |
+| Athens Nomad Fest | `/anf-free` |
+| Nomad Fest Thank You (Athens) | `/ebook-download-thank-you` |
+| Additional Accelerator | `/additional-accelerator` |
+| Checkout Accelerator | `/checkout-accelerator` |
+| Accelerator Thank You | `/accelerator-thank-you-page` |
+| Additional Accelerator (discounted) | `/additional-accelerator-page` |
+| Checkout Accelerator (discounted) | `/checkout-accelerator-page` |
+| Accelerator Thank You (discounted) | `/accelerator-thankyou-page` |
+| TMB Checkout (discounted) | `/tmb-offers-checkout-form` |
+| TMB Thank You | `/travel-mastery-blueprint-thank-you` |
+| TMB Thank You (discounted) | `/travel-mastery-blueprint-thankyou` |
+| Masterclass Replay | `/masterclass-replay-how-to-travel-the-world-purposefully` |
+| Masterclass Webinar | `/how-to-travel-the-world-purposefully` |
+| Masterclass Thank You | `/masterclass-thank-you` |
+| Traveller DNA Quiz (landing) | `/the-traveller-dna-quiz` |
+| Traveller DNA Quiz | `/quiz-4272` |
+| Quiz Result | `/result` |
+| Coaching Thank You | `/coaching-thank-you-page` |
+| Book Reviews (listing) | `/book-reviews` |
+| Newsletter Opt-In (QR) | `/newsletter-qr` |
+
+### Book reviews (6) — carded on `/book-reviews` (GHL category `687bdb9331c0ce7ef045ba10`)
+
+`/post/ajit-nawalkha`, `/post/eni-selfo`, `/post/ajit-nawalkha-djzb8`,
+`/post/booksparlour`, `/post/amazon-review`, `/post/goodreads-review`
+
+### Repo-authored posts
+
+`/post/beyonder-the-podcast-with-veerle-beelen` (Freeman, 2026-07-15) was authored
+directly in the repo, not published in GHL — it is carried as a MANUAL_POSTS entry
+in tools/publish.py so the /podcast listing shows it. Prefer publishing in GHL
+then running sync; ask Freeman to add it in GHL when convenient.
 
 ### Correction log
 
