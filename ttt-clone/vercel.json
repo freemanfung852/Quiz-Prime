@@ -6,6 +6,8 @@
     { "source": "/", "destination": "/traveltotransform.com/index.html" },
     { "source": "/post/:slug", "destination": "/traveltotransform.com/post/:slug.html" },
     { "source": "/course/:slug", "destination": "/traveltotransform.com/course/:slug.html" },
+    { "source": "/course", "destination": "/traveltotransform.com/course/tmb.html" },
+    { "source": "/tmb", "destination": "/traveltotransform.com/tmb-offers-checkout.html" },
     { "source": "/:page", "destination": "/traveltotransform.com/:page.html" }
   ]
 }
