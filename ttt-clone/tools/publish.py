@@ -514,7 +514,128 @@ def cmd_seoheads():
     print("seoheads: updated %d/%d pages (canonical/OG/Twitter/robots)" % (n, len(files)))
 
 
+# ---- Wave 2: JSON-LD structured data (AEO/GEO) ----------------------------
+# Head/script-level only. Adds an idempotent <script data-ttt-schema> @graph to
+# indexable pages. Podcast episodes are sourced from podcast-episodes.json (the
+# single local episode model), so the future locally-owned grid renderer reuses
+# the same source instead of building episode metadata twice.
+SCHEMA_BEGIN, SCHEMA_END = "<!--ttt-schema-->", "<!--/ttt-schema-->"
+LOGO_URL = "https://storage.googleapis.com/msgsndr/pIQnJdASBmjOuDSHEr5v/media/687c9ccbe36c1580ec1b2ea4.png"
+SAME_AS = [
+    "https://www.facebook.com/freemanfung.global",
+    "https://www.instagram.com/freemanfung.global",
+    "https://www.linkedin.com/in/freeman-fung",
+]
+ORG_ID = CANONICAL_DOMAIN + "/#organization"
+WEBSITE_ID = CANONICAL_DOMAIN + "/#website"
+PERSON_ID = CANONICAL_DOMAIN + "/#freeman"
+# Reference nodes carry @id (for site-wide entity consolidation) AND inline
+# type/name/logo (so each page validates standalone).
+ORG_REF = {"@id": ORG_ID, "@type": "Organization", "name": SITE_NAME,
+           "url": CANONICAL_DOMAIN + "/", "logo": {"@type": "ImageObject", "url": LOGO_URL}}
+PERSON_REF = {"@id": PERSON_ID, "@type": "Person", "name": "Freeman Fung",
+              "url": CANONICAL_DOMAIN + "/about"}
+
+
+def _org():
+    return {"@type": "Organization", "@id": ORG_ID, "name": SITE_NAME,
+            "url": CANONICAL_DOMAIN + "/",
+            "logo": {"@type": "ImageObject", "url": LOGO_URL},
+            "sameAs": SAME_AS}
+
+
+def _person():
+    return {"@type": "Person", "@id": PERSON_ID, "name": "Freeman Fung",
+            "url": CANONICAL_DOMAIN + "/about",
+            "jobTitle": "Speaker, Coach & Author", "worksFor": ORG_REF,
+            "sameAs": SAME_AS}
+
+
+def _abs(url):
+    return CANONICAL_DOMAIN + url if url.startswith("/") else url
+
+
+def _episodes():
+    try:
+        return json.load(open(os.path.join(ROOT, "podcast-episodes.json"), encoding="utf-8"))
+    except Exception:
+        return []
+
+
+def build_jsonld(relpath):
+    name = relpath[:-5]
+    if name in SITEMAP_EXCLUDE:
+        return None
+    path = _url_path(relpath)
+    s = open(os.path.join(PAGES, relpath), encoding="utf-8").read()
+    head = s[:s.lower().find("</head>")]
+    og_title = _meta_content(head, "property", "og:title") or ""
+    og_image = _meta_content(head, "property", "og:image") or ""
+    desc = _meta_content(head, "name", "description") or _meta_content(head, "property", "og:description") or ""
+    url = CANONICAL_DOMAIN + path
+    eps = {e["slug"]: e for e in _episodes()}
+
+    if path == "/":
+        return [_org(),
+                {"@type": "WebSite", "@id": WEBSITE_ID, "name": SITE_NAME,
+                 "url": CANONICAL_DOMAIN + "/", "publisher": {"@id": ORG_ID},
+                 "inLanguage": "en"}]
+    if path == "/about":
+        p = _person()
+        if og_image:
+            p["image"] = og_image
+        return [p, {"@type": "ProfilePage", "@id": url + "#profile",
+                    "url": url, "mainEntity": {"@id": PERSON_ID},
+                    "isPartOf": {"@id": WEBSITE_ID}}]
+    if path == "/course/tmb":
+        return [{"@type": "Course", "name": og_title or "The Travel Mastery Blueprint",
+                 "description": desc, "url": url, "provider": ORG_REF,
+                 "inLanguage": "en"}]
+    slug = name.split("/")[-1]
+    if slug in eps:
+        e = eps[slug]
+        ep = {"@type": "PodcastEpisode", "@id": url + "#episode",
+              "name": e["title"], "url": url,
+              "description": e.get("description") or desc,
+              "image": _abs(e.get("image") or og_image),
+              "inLanguage": "en", "author": PERSON_REF, "publisher": ORG_REF}
+        if e.get("date"):
+            ep["datePublished"] = e["date"]
+        return [ep, {"@type": "WebPage", "@id": url + "#webpage", "url": url,
+                     "speakable": {"@type": "SpeakableSpecification",
+                                   "cssSelector": ["h1", ".hl_page-preview--content h2"]}}]
+    return None
+
+
+def inject_jsonld(relpath):
+    graph = build_jsonld(relpath)
+    if not graph:
+        return False
+    path = os.path.join(PAGES, relpath)
+    s = open(path, encoding="utf-8").read()
+    s = re.sub(re.escape(SCHEMA_BEGIN) + r".*?" + re.escape(SCHEMA_END), "", s, flags=re.S)
+    payload = json.dumps({"@context": "https://schema.org", "@graph": graph},
+                         separators=(",", ":"), ensure_ascii=False)
+    block = (SCHEMA_BEGIN + '<script type="application/ld+json" data-ttt-schema>'
+             + payload + '</script>' + SCHEMA_END)
+    m = re.search(r'</title>', s, re.I)
+    at = m.end() if m else s.lower().find("<head>") + 6
+    s = s[:at] + block + s[at:]
+    open(path, "w", encoding="utf-8").write(s)
+    return True
+
+
+def cmd_jsonld():
+    import glob as _glob
+    files = [os.path.basename(f) for f in sorted(_glob.glob(os.path.join(PAGES, "*.html")))]
+    files += ["course/" + os.path.basename(f) for f in sorted(_glob.glob(os.path.join(PAGES, "course", "*.html")))]
+    files += ["post/" + os.path.basename(f) for f in sorted(_glob.glob(os.path.join(PAGES, "post", "*.html")))]
+    n = sum(1 for rel in files if inject_jsonld(rel))
+    print("jsonld: injected data-ttt-schema on %d pages" % n)
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "check"
     {"sync": cmd_sync, "enhance": cmd_enhance, "check": cmd_check,
-     "sitemap": cmd_sitemap, "seoheads": cmd_seoheads}.get(cmd, lambda: print(__doc__))()
+     "sitemap": cmd_sitemap, "seoheads": cmd_seoheads,
+     "jsonld": cmd_jsonld}.get(cmd, lambda: print(__doc__))()

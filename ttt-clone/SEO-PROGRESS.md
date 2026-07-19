@@ -18,13 +18,39 @@ without Freeman's go-ahead** (live production site).
 ---
 
 ## NOW / NEXT / BLOCKED
-- **NOW:** Waves 0/1/1b SHIPPED (PR #3/#4/#5). Live-verified: GSC tag ✅, path 301 ✅, head tags
-  survive hydration on live core page ✅ (`/coaching`: canonical/desc/twitter/og all present, 0 dup).
-  Wave 1c infra (www-root 301 fix + `vercel.json` cache headers + `llms.txt` + robots AI-bots) done
-  on branch `seo-wave1c-infra`, opening PR.
-- **NEXT:** Wave 2 — richer JSON-LD (FAQ, PodcastEpisode, Speakable, publisher.logo, sameAs;
-  homepage WebSite+Organization; /about Person; /course/tmb Course).
-- **BLOCKED:** nothing. Ship path = branch → PR → merge → Vercel auto-deploy (confirmed working).
+- **NOW:** Waves 0/1/1b/1c SHIPPED + live-verified. Wave 2 (JSON-LD) done on branch
+  `seo-wave2-jsonld` (head/script-level only), opening PR.
+- **NEXT:** Wave 4 — image optimisation / load speed (own PR).
+- **DEFERRED to ONE fresh dedicated session** (all hydration-sensitive, do together): podcast
+  grid rebuild, Wave 3 (body content), Bug C (podcast-post header/footer). See "FRESH SESSION" below.
+- **BLOCKED:** nothing.
+
+## 🔒 FRESH SESSION — hydration-sensitive work (do NOT touch piecemeal)
+**Why grouped:** all three re-render/replace client-hydrated DOM; each needs per-page browser
+verification. The `/podcast` grid reorder (PR #7) was reverted (PR #9) after it desynced card
+title vs link on the live hydrated DOM.
+
+**Cris's authoritative diagnosis (site's builder) — settled approach, do not re-investigate:**
+> Clone is an HTML snapshot, not a reusable card system. Each podcast card exists in THREE places:
+> (1) Static HTML (image/title initially shown); (2) Nuxt hydration payload (title/link restored
+> after load); (3) `ghl-offline-data.js` (catalog used during client fetch). PR #7 changed only
+> the static HTML image → Nuxt then reused the old title + hyperlink → mixed card.
+> **Best fix:** replace the podcast grid with a locally-owned data model —
+> `{ "title", "image": "/assets/podcast/x.png", "url": "/post/slug", "date" }`. One JSON object =
+> one complete card; array order = grid order. No GHL hydration conflict; a future episode = one
+> clean entry. **Durable Vercel fix:** local JSON + card renderer, **disable the old Nuxt
+> podcast-grid hydration.** **Interim workaround:** publish the episode in GHL, then run
+> `publish.py sync`.
+
+- **Reuse `ttt-clone/podcast-episodes.json`** (created in Wave 2) as that local episode model —
+  same shape Cris described. Don't build episode metadata twice.
+- **Wave 3 (body content):** internal links, descriptive alt-text, in-body perf (img dims,
+  YouTube facades) — body edits → hydration-sensitive.
+- **Bug C (podcast-post header/footer):** ~27 KB HTML + ~46 KB missing CSS (footer entirely
+  absent) + Nuxt-data transplant. Prove on ONE post, browser-verify hydration, then roll out to 22.
+- **Verification standard (all of the above):** per-card/per-page browser check on the preview
+  that **title == link == image == same episode**, clicked through, BEFORE merge. Never verify
+  by static/raw HTML or slug-order alone (that's what missed the PR #7 desync).
 
 ## ⚠️ HYDRATION MODEL (learned 2026-07-19 — governs all head/body edits)
 Pages are **Nuxt SSR clones with live client-side hydration**. Verified on a live post:
@@ -64,16 +90,25 @@ Pages are **Nuxt SSR clones with live client-side hydration**. Verified on a liv
   coaching-form pages → consider consolidating/cross-canonicalising later (duplicate-content).
 - ⏳ **Post-merge verify:** confirm injected canonical/description survive Nuxt hydration on live core pages.
 
-## Wave 2 — Structured-data depth (AEO/GEO)  ☐  *[parallel: Agent Schema]*
-- ☐ `enhance_post`: add `publisher.logo` (fixes invalid Article rich results) + `sameAs`
-  (brand + Freeman socials).
-- ☐ Podcasts → `PodcastEpisode` (+ `partOfSeries`→`PodcastSeries`, `duration`,
-  `associatedMedia`→`VideoObject`/`AudioObject`) instead of `BlogPosting`.
-- ☐ `FAQPage`/`Question`/`acceptedAnswer` + `speakable` (both 0 today).
-- ☐ Strip `｜Travel to Transform` from `headline`; stop mid-word 300-char `description` cut.
-- ☐ Make generator reproduce the `beyonder` gold-standard (stop drift/clobber).
-- ☐ Page schema: homepage `WebSite`+`SearchAction`+`Organization`; `/about` `Person`/`ProfilePage`;
-  `/course/tmb` `Course`/`Offer`.
+## Wave 2 — Structured-data depth (AEO/GEO)  ✅ done (branch `seo-wave2-jsonld`, PR opening)
+New self-contained `cmd_jsonld()` / `inject_jsonld()` in `publish.py` — adds an idempotent
+`<!--ttt-schema--><script data-ttt-schema>@graph</script>` to indexable pages (head/script-level;
+leaves the old `data-ttt-seo` BlogPosting blocks in place; no grids/shim/body/forms touched).
+- ✅ Homepage: `Organization` (with `logo` + `sameAs` FB/IG/LinkedIn) + `WebSite`.
+- ✅ `/about`: `Person` (Freeman, jobTitle, sameAs, worksFor) + `ProfilePage`.
+- ✅ `/course/tmb`: `Course` (with `provider` Organization).
+- ✅ 22 podcast posts: `PodcastEpisode` (name/url/date/description/image/author/publisher) +
+  `WebPage` with `SpeakableSpecification`. All 25 blocks validated as parseable JSON; @id refs
+  carry inline type/name so each page validates standalone AND consolidates site-wide.
+- **Episode source = `ttt-clone/podcast-episodes.json`** (NEW, 22 eps, shape
+  `{title, slug, url, image, date, description}`) — the single local episode model. **The
+  deferred grid rebuild MUST reuse this file** (see FRESH SESSION) so episode metadata isn't built
+  twice. To add PodcastEpisode media/series later, enrich this JSON (associatedMedia/partOfSeries)
+  and re-run `jsonld`.
+- ⏳ Deferred (need body content, → Wave 3 fresh session): `FAQPage`/`Question` (no FAQ content yet);
+  blog-post Article upgrade + Speakable.
+- ⏳ **Post-merge verify:** JSON-LD present + valid on the live *rendered* DOM (Rich Results Test)
+  on homepage, /about, /course/tmb, one podcast post.
 
 ## Wave 3 — Content extractability (AEO/GEO)  ☐  *[parallel: Agent Content]*
 - ☐ ≥2 question-phrased H2s per post (21 podcasts have 0, blogs 1) + short FAQ tail (feeds Wave 2).
