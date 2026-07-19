@@ -18,10 +18,12 @@ without Freeman's go-ahead** (live production site).
 ---
 
 ## NOW / NEXT / BLOCKED
-- **NOW:** Wave 0 (PR #3) + Wave 1 head meta (PR #4) SHIPPED. Wave 1b (GSC verify tag + www→non-www
-  301 + 5 descriptions) done on branch `seo-wave1b-gsc-redirect-desc`, opening PR.
-- **NEXT:** `llms.txt` + `vercel.json` cache headers; then Wave 2 (richer JSON-LD). Post-merge:
-  verify head tags survive hydration on live core pages; Freeman completes GSC verification.
+- **NOW:** Waves 0/1/1b SHIPPED (PR #3/#4/#5). Live-verified: GSC tag ✅, path 301 ✅, head tags
+  survive hydration on live core page ✅ (`/coaching`: canonical/desc/twitter/og all present, 0 dup).
+  Wave 1c infra (www-root 301 fix + `vercel.json` cache headers + `llms.txt` + robots AI-bots) done
+  on branch `seo-wave1c-infra`, opening PR.
+- **NEXT:** Wave 2 — richer JSON-LD (FAQ, PodcastEpisode, Speakable, publisher.logo, sameAs;
+  homepage WebSite+Organization; /about Person; /course/tmb Course).
 - **BLOCKED:** nothing. Ship path = branch → PR → merge → Vercel auto-deploy (confirmed working).
 
 ## ⚠️ HYDRATION MODEL (learned 2026-07-19 — governs all head/body edits)
@@ -54,8 +56,10 @@ Pages are **Nuxt SSR clones with live client-side hydration**. Verified on a liv
   page content (`anf-free`, `additional-accelerator(-page)`, `course-pre-launch-sign-up`, `newsletter-qr`).
 - ✅ **Google Search Console** verification `<meta google-site-verification>` on homepage only.
 - ✅ **www → non-www 301** in `vercel.json` (host `has` redirect, first rule) so Google sees one host.
-- ☐ `ttt-clone/llms.txt` (new) — AI-crawler manifest. Add explicit AI-bot `Allow` in `robots.txt`.
-- ☐ `vercel.json` `headers` block — long cache for `/assets/**`. (Shared with Wave 4.)
+- ✅ **Wave 1c (branch `seo-wave1c-infra`):** `llms.txt` AI manifest; robots.txt explicit AI-bot
+  Allow (GPTBot/OAI-SearchBot/ChatGPT-User/ClaudeBot/Claude-Web/PerplexityBot/Google-Extended);
+  `vercel.json` cache headers for `/assets/**` (30d + SWR); **fixed www-root 301** (Vercel `/:path*`
+  missed bare `/` → added explicit `/` rule). *Verify www→non-www on `/` after deploy.*
 - ⚠️ Parked: `additional-accelerator`, `additional-accelerator-page`, `coaching-form` are near-duplicate
   coaching-form pages → consider consolidating/cross-canonicalising later (duplicate-content).
 - ⏳ **Post-merge verify:** confirm injected canonical/description survive Nuxt hydration on live core pages.

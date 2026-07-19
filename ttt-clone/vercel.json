@@ -3,11 +3,15 @@
   "cleanUrls": false,
   "trailingSlash": false,
   "redirects": [
+    { "source": "/", "has": [{ "type": "host", "value": "www.traveltotransform.com" }], "destination": "https://traveltotransform.com/", "statusCode": 301 },
     { "source": "/:path*", "has": [{ "type": "host", "value": "www.traveltotransform.com" }], "destination": "https://traveltotransform.com/:path*", "statusCode": 301 },
     { "source": "/404", "destination": "/page-not-found", "statusCode": 301 },
     { "source": "/index.html", "destination": "/page-not-found", "statusCode": 301 },
     { "source": "/blogs", "destination": "/page-not-found", "statusCode": 301 },
     { "source": "/media", "destination": "/page-not-found", "statusCode": 301 }
+  ],
+  "headers": [
+    { "source": "/assets/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000, stale-while-revalidate=86400" }] }
   ],
   "rewrites": [
     { "source": "/", "destination": "/traveltotransform.com/index.html" },

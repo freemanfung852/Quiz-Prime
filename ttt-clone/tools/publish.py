@@ -263,7 +263,16 @@ def cmd_sitemap():
     open(os.path.join(ROOT, "sitemap.xml"), "w", encoding="utf-8").write("\n".join(out) + "\n")
 
     if CUTOVER:
-        robots = ("User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n" % CANONICAL_DOMAIN)
+        robots = ("User-agent: *\nAllow: /\n\n"
+                  "# AI answer / generative engines are welcome (GEO). See /llms.txt\n"
+                  "User-agent: GPTBot\nAllow: /\n\n"
+                  "User-agent: OAI-SearchBot\nAllow: /\n\n"
+                  "User-agent: ChatGPT-User\nAllow: /\n\n"
+                  "User-agent: ClaudeBot\nAllow: /\n\n"
+                  "User-agent: Claude-Web\nAllow: /\n\n"
+                  "User-agent: PerplexityBot\nAllow: /\n\n"
+                  "User-agent: Google-Extended\nAllow: /\n\n"
+                  "Sitemap: %s/sitemap.xml\n" % CANONICAL_DOMAIN)
         mode = "CUTOVER (indexable)"
     else:
         robots = ("# Staging mirror of traveltotransform.com — must not compete with\n"
