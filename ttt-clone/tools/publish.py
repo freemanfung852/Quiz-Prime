@@ -535,46 +535,63 @@ def _shim_cat(cat_id):
     return data.get(cat_id, {}).get("posts", [])
 
 
-def regen_grid(page, cat_id, card_marker='<div class="blog-post-wrapper-list three-col">'):
+def regen_grid(page, cat_id, card_marker='<div class="blog-post-wrapper-list three-col">', region=None):
+    """Rebuild a listing's page-1 cards from the shim (single source, date desc).
+    region=(start_str, end_str) scopes to cards between two anchors (e.g. a section
+    heading and the next) so a mixed page's other cards stay untouched. Replaces
+    each card IN PLACE (back to front), so it works whether or not cards are
+    contiguous, and picks a template card that actually carries a CDN image."""
     path = os.path.join(PAGES, page)
     if not os.path.exists(path):
         return False
     s = open(path, encoding="utf-8").read()
-    pos = [m.start() for m in re.finditer(re.escape(card_marker), s)]
+    lo, hi = 0, len(s)
+    if region:
+        lo = s.find(region[0])
+        hi = s.find(region[1], lo) if lo != -1 else -1
+        if lo == -1 or hi == -1:
+            return False
+    pos = [m.start() for m in re.finditer(re.escape(card_marker), s) if lo <= m.start() < hi]
     if not pos:
         return False
     spans = [(p, _match_div(s, p)) for p in pos]
-    tmpl = s[spans[0][0]:spans[0][1]]
-    m_slug = re.search(r'/post/([a-z0-9-]+)', tmpl)
-    m_img = re.search(r'(https://(?:assets\.cdn\.filesafe\.space|storage\.googleapis\.com)/[^\s"]+?\.(?:png|jpe?g|webp))', tmpl)
-    m_title = re.search(r'alt="([^"]+)"', tmpl)
-    if not (m_slug and m_img and m_title):
+    IMG = r'(https://(?:assets\.cdn\.filesafe\.space|storage\.googleapis\.com)/[^\s"]+?\.(?:png|jpe?g|webp))'
+    tmpl = next((s[a:b] for a, b in spans
+                 if re.search(IMG, s[a:b]) and '/post/' in s[a:b] and 'alt="' in s[a:b]), None)
+    if tmpl is None:
         return False
-    t_slug, t_img, t_title = m_slug.group(1), m_img.group(1), m_title.group(1)
-    posts = _shim_cat(cat_id)[:len(spans)]  # keep the same page-1 card count
-    if not posts:
+    t_slug = re.search(r'/post/([a-z0-9-]+)', tmpl).group(1)
+    t_img = re.search(IMG, tmpl).group(1)
+    t_title = re.search(r'alt="([^"]+)"', tmpl).group(1)
+    posts = _shim_cat(cat_id)[:len(spans)]  # keep the same card count
+    if len(posts) < len(spans):
         return False
 
     def build(p):
         card = tmpl.replace(t_slug, p["urlSlug"]).replace(t_title, p.get("title", ""))
         img = p.get("imageUrl", "")
         if img.startswith("/"):
-            # Local asset: the GHL image optimizer 403s foreign URLs, so collapse
-            # each optimizer-wrapped src/srcset to the direct local path.
+            # Local asset: GHL optimizer 403s foreign URLs. Collapse any optimizer
+            # wrapper AND replace any direct ref with the local path.
             card = re.sub(r'https://images\.leadconnectorhq\.com/image/[^"\s]*?u_' + re.escape(t_img), img, card)
+            card = card.replace(t_img, img)
         else:
             card = card.replace(t_img, img)
         return card
 
-    new = "".join(build(p) for p in posts)
-    s = s[:spans[0][0]] + new + s[spans[-1][1]:]
+    for (a, b), p in sorted(zip(spans, posts), key=lambda x: -x[0][0]):
+        s = s[:a] + build(p) + s[b:]
     open(path, "w", encoding="utf-8").write(s)
     return True
 
 
 def cmd_grids():
-    ok = regen_grid("podcast.html", "6878c4aaf07aa601cf0236d1")
-    print("grids: podcast.html page-1 grid %s" % ("regenerated from shim" if ok else "SKIPPED"))
+    a = regen_grid("podcast.html", "6878c4aaf07aa601cf0236d1")
+    print("grids: podcast.html page-1 grid %s" % ("regenerated" if a else "unchanged/skipped"))
+    b = regen_grid("resources.html", "6878c4aaf07aa601cf0236d1",
+                   card_marker='<div class="blog-item blog-column"',
+                   region=("Podcast Interviews", "Blogs"))
+    print("grids: resources.html podcast preview %s" % ("regenerated" if b else "unchanged/skipped"))
 
 
 if __name__ == "__main__":
