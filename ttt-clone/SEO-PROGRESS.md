@@ -18,12 +18,12 @@ without Freeman's go-ahead** (live production site).
 ---
 
 ## NOW / NEXT / BLOCKED
-- **NOW:** Waves 0/1/1b/1c SHIPPED + live-verified. Wave 2 (JSON-LD) done on branch
-  `seo-wave2-jsonld` (head/script-level only), opening PR.
-- **NEXT:** Wave 4 — image optimisation / load speed (own PR).
-- **DEFERRED to ONE fresh dedicated session** (all hydration-sensitive, do together): podcast
-  grid rebuild, Wave 3 (body content), Bug C (podcast-post header/footer). See "FRESH SESSION" below.
-- **BLOCKED:** nothing.
+- **NOW:** Waves 0/1/1b/1c/2 SHIPPED + verified. Wave 4 safe part (`.vercelignore`, deploy
+  −260 MB) on branch `seo-wave4-images`, PR — **this closes the safe standalone SEO work.**
+- **NEXT:** the 🔒 FRESH SESSION bundle below (all hydration-sensitive, do together with per-page
+  browser verification): podcast grid rebuild · Wave 3 body content · Bug C header/footer ·
+  runtime image optimisation (all share the Nuxt data payload).
+- **BLOCKED:** nothing standalone remains — everything left is hydration-coupled.
 
 ## 🔒 FRESH SESSION — hydration-sensitive work (do NOT touch piecemeal)
 **Why grouped:** all three re-render/replace client-hydrated DOM; each needs per-page browser
@@ -48,6 +48,12 @@ title vs link on the live hydrated DOM.
   YouTube facades) — body edits → hydration-sensitive.
 - **Bug C (podcast-post header/footer):** ~27 KB HTML + ~46 KB missing CSS (footer entirely
   absent) + Nuxt-data transplant. Prove on ONE post, browser-verify hydration, then roll out to 22.
+- **Runtime image optimisation (Wave 4 leftover):** the homepage's ~26 MB of images are
+  **hydration-locked** — each heavy image lives in the Nuxt `<script>` data payload (with alt),
+  so Nuxt re-renders it on hydration; rewriting `<img>` URLs to WebP/AVIF (optimizer-wrapped or
+  re-hosted) desyncs like the cards did. Re-host from the local model + patch the data payload as
+  part of this rebuild. (Cache headers already shipped in Wave 1c; the dead 248 MB mirror already
+  dropped via `.vercelignore` in Wave 4.)
 - **Verification standard (all of the above):** per-card/per-page browser check on the preview
   that **title == link == image == same episode**, clicked through, BEFORE merge. Never verify
   by static/raw HTML or slug-order alone (that's what missed the PR #7 desync).
@@ -116,17 +122,16 @@ leaves the old `data-ttt-seo` BlogPosting blocks in place; no grids/shim/body/fo
 - ☐ Descriptive alt text (replace `Photo 1`/`Reel 2`/`Brand Logo`).
 - ☐ Semantic `<article>`/`<main>` wrappers where feasible.
 
-## Wave 4 — Loading speed  ☐  *[parallel: Agent Perf]*
-- ☐ Images (hybrid): re-host + WebP/AVIF the worst offenders (18.9 MB PNG + multi-MB heroes on
-  index/coaching/course/tmb) → `assets/optimized/`, rewrite those URLs; light-touch rest.
-- ☐ Add `width`/`height` to all `<img>` (CLS); fix inverted lazy/eager priority (hero eager +
-  `fetchpriority="high"`, below-fold lazy); `decoding="async"`.
-- ☐ Remove `cdn.tailwindcss.com` runtime JIT on the 3 marketing pages → prebuilt purged CSS.
-- ☐ YouTube facade (click-to-load) for 8 embeds.
-- ☐ Fonts: subset used families/weights; `preconnect fonts.googleapis.com`; drop unused `.otf`.
-- ☐ Resource hints: `preconnect assets.cdn.filesafe.space`, `preload` LCP image; de-dupe Swiper
-  `<script>` + font preloads; `defer ghl-offline-data.js`.
-- ☐ `.vercelignore` the 237 MB dead local CDN mirror (deploy bloat only).
+## Wave 4 — Loading speed  ◐ (safe part shipped; runtime image work DEFERRED → fresh session)
+- ✅ **`.vercelignore` the dead CDN mirror** (`assets.cdn.filesafe.space/`, `storage.googleapis.com/`,
+  `images.squarespace-cdn.com/`) → deploy **~289 MB → ~29 MB (−260 MB, 90%)**. Zero runtime effect
+  (all refs are absolute CDN URLs, verified). Branch `seo-wave4-images`, PR.
+- ⛔ **DEFERRED (hydration-locked → fresh session):** homepage ~26 MB images, WebP/AVIF re-host,
+  `width`/`height`+lazy/`fetchpriority` on data-driven imgs — all live in the Nuxt data payload
+  (see FRESH SESSION bundle). Cannot touch without desync per the PR #7 lesson.
+- ⛔ **DEFERRED (deferred body/head areas):** Tailwind CDN JIT removal, YouTube facades (post
+  bodies), font subsetting (GHL-managed head) — need the same hydration-aware handling.
+- ✅ Cache headers already shipped (Wave 1c) — not re-touched.
 
 ## Wave 5 — Verify & ship  ☐
 - ☐ Re-crawl live: robots allows, sitemap resolves, canonicals 200 (no redirect chain), no noindex.

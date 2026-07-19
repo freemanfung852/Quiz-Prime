@@ -1,0 +1,9 @@
+# Dead-weight local mirrors of GHL/CDN media. Every page references these images
+# by absolute https:// URL (verified: zero local-path references), so browsers
+# fetch them from the real CDN — the local copies are never served and only bloat
+# the deploy. Runtime image optimisation of the CDN-hosted images is deferred to
+# the hydration-focused rebuild (see SEO-PROGRESS.md), since those images live in
+# the Nuxt data payload.
+assets.cdn.filesafe.space/
+storage.googleapis.com/
+images.squarespace-cdn.com/
