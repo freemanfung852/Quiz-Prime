@@ -39,7 +39,9 @@ CANONICAL_DOMAIN = LIVE
 #         `python3 tools/publish.py sitemap` and redeploy. Canonicals already
 #         point at CANONICAL_DOMAIN (the live domain), so they need no change.
 # Pages excluded from the sitemap either way (thank-yous, checkouts, system).
-CUTOVER = False
+# CUTOVER executed 2026-07-19: the clone is now the live traveltotransform.com
+# (content no longer lives in GHL). robots.txt now allows indexing.
+CUTOVER = True
 SITEMAP_EXCLUDE = {
     "404", "page-not-found", "maintenance-page", "clone-map",
     "tmb-offers-checkout", "tmb-offers-checkout-form",
