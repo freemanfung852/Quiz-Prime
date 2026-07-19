@@ -369,7 +369,134 @@ def cmd_check():
     print("check:", "OK — clone matches live" if not problems else f"{problems} posts need attention (run sync)")
 
 
+# ---- Wave 1: self-contained head SEO (no GHL API) -------------------------
+# GHL content is gone, so this reads metadata from each page's own HTML and
+# adds only the head tags that are MISSING (idempotent, inside markers). Safe
+# for bare core pages AND the posts that already carry canonical + JSON-LD.
+SITE_NAME = "Travel to Transform"
+OG_LOCALE = "en_US"
+SEO_BEGIN, SEO_END = "<!--ttt-seo-->", "<!--/ttt-seo-->"
+# Curated meta descriptions for indexable pages that ship none. DRAFT copy —
+# refine in TTT brand voice. Keyed by canonical path. Pages not listed keep
+# whatever description they already have (or none).
+SEO_DESCRIPTIONS = {
+    "/about": "Meet Freeman Fung, founder of Travel to Transform — speaker, coach and author helping you turn travel into deep personal transformation and purposeful living.",
+    "/coaching": "1:1 transformational coaching with Freeman Fung. Stop waiting for breakthrough by chance — design a life and travel path aligned with your highest vision.",
+    "/coaching-form": "Apply for 1:1 transformational coaching with Freeman Fung — start designing a life and travel path aligned with your highest vision.",
+    "/podcast": "Freeman Fung on transformational travel, global citizenship and conscious living. Listen to every podcast episode from Travel to Transform.",
+    "/speaking": "Book Freeman Fung to speak — keynotes on transformational travel, global citizenship and turning journeys into growth for your event or organisation.",
+    "/book-reviews": "Reader reviews of Freeman Fung's book on transformational travel — real stories of how travelling with purpose sparked lasting personal change.",
+    "/resources": "Free tools, guides and resources from Travel to Transform to help you travel with purpose and turn every journey into lasting transformation.",
+    "/my-travel-stories": "Freeman Fung's personal travel stories — honest reflections on the journeys that shaped his path from tourist to transformed global citizen.",
+    "/the-traveller-dna-quiz": "Take the free Traveller DNA Quiz and discover your unique travel archetype — plus how to turn your next journey into real personal transformation.",
+    "/course/tmb": "The Travel Mastery Blueprint — Freeman Fung's flagship course to help you travel the world purposefully and transform your life through conscious travel.",
+    "/contact": "Get in touch with Freeman Fung and the Travel to Transform team for coaching, speaking, media and partnership enquiries.",
+    "/appreciation": "A note of appreciation from Freeman Fung and Travel to Transform — thank you for being part of this journey of purposeful, transformational travel.",
+    "/media-kit": "Travel to Transform media kit — bio, photos and speaking topics for Freeman Fung. Everything media and event partners need in one place.",
+    "/media-contact": "Media and press enquiries for Freeman Fung and Travel to Transform — reach out for interviews, features and speaking opportunities.",
+    "/privacy-policy": "Travel to Transform privacy policy — how we collect, use and protect your personal information.",
+    "/terms-of-use": "Travel to Transform terms of use — the terms and conditions governing your use of this website and our services.",
+}
+
+
+def _esc(t):
+    return ((t or "").replace("&", "&amp;").replace('"', "&quot;")
+            .replace("<", "&lt;").replace(">", "&gt;"))
+
+
+def _url_path(relpath):
+    name = relpath[:-5]
+    return "/" if name == "index" else "/" + name
+
+
+def _present(head, pat):
+    return bool(re.search(pat, head, re.I))
+
+
+def _meta_content(head, attr, val):
+    """Return existing meta content (already HTML-escaped) or None. Handles
+    either attribute order and content that contains apostrophes."""
+    for pat in (r'<meta[^>]*%s=["\']%s["\'][^>]*content=(["\'])(.*?)\1' % (attr, re.escape(val)),
+                r'<meta[^>]*content=(["\'])(.*?)\1[^>]*%s=["\']%s["\']' % (attr, re.escape(val))):
+        m = re.search(pat, head, re.I | re.S)
+        if m:
+            return m.group(2)
+    return None
+
+
+def enhance_head(relpath):
+    """Idempotent, self-contained SEO head layer. Adds only missing tags,
+    wrapped in <!--ttt-seo--> markers. noindex for excluded funnel pages."""
+    path = os.path.join(PAGES, relpath)
+    s = open(path, encoding="utf-8").read()
+    if "</head>" not in s.lower():
+        return False
+    s = re.sub(re.escape(SEO_BEGIN) + r".*?" + re.escape(SEO_END), "", s, flags=re.S)
+    head = s[:s.lower().find("</head>")]
+    name = relpath[:-5]
+    url = CANONICAL_DOMAIN + _url_path(relpath)
+    lines = []
+    if name in SITEMAP_EXCLUDE:
+        if not _present(head, r'<meta[^>]+name=["\']robots["\']'):
+            lines.append('<meta name="robots" content="noindex,follow">')
+    else:
+        og_title = _meta_content(head, "property", "og:title")
+        og_image = _meta_content(head, "property", "og:image")
+        og_desc = _meta_content(head, "property", "og:description")
+        meta_desc = _meta_content(head, "name", "description")
+        title_txt = (re.search(r'<title[^>]*>(.*?)</title>', s, re.I | re.S) or [None, ""])[1].strip()
+        curated = SEO_DESCRIPTIONS.get(_url_path(relpath))
+        if meta_desc is not None:
+            desc_html = meta_desc
+        elif curated:
+            desc_html = _esc(curated)
+        elif og_desc is not None:
+            desc_html = og_desc
+        else:
+            desc_html = None
+        tw_title = og_title if og_title is not None else title_txt
+        if not _present(head, r'<link[^>]+rel=["\']canonical'):
+            lines.append('<link rel="canonical" href="%s">' % url)
+        if not _present(head, r'og:url'):
+            lines.append('<meta property="og:url" content="%s">' % url)
+        if not _present(head, r'og:site_name'):
+            lines.append('<meta property="og:site_name" content="%s">' % SITE_NAME)
+        if not _present(head, r'og:locale'):
+            lines.append('<meta property="og:locale" content="%s">' % OG_LOCALE)
+        if meta_desc is None and curated:
+            lines.append('<meta name="description" content="%s">' % _esc(curated))
+            if og_desc is None:
+                lines.append('<meta property="og:description" content="%s">' % _esc(curated))
+        if og_image and not _present(head, r'og:image:alt'):
+            lines.append('<meta property="og:image:alt" content="%s">' % (tw_title or SITE_NAME))
+        if not _present(head, r'twitter:card'):
+            lines.append('<meta name="twitter:card" content="summary_large_image">')
+        if tw_title and not _present(head, r'twitter:title'):
+            lines.append('<meta name="twitter:title" content="%s">' % tw_title)
+        if desc_html and not _present(head, r'twitter:description'):
+            lines.append('<meta name="twitter:description" content="%s">' % desc_html)
+        if og_image and not _present(head, r'twitter:image'):
+            lines.append('<meta name="twitter:image" content="%s">' % og_image)
+    if not lines:
+        return False
+    block = SEO_BEGIN + "".join(lines) + SEO_END
+    m = re.search(r'</title>', s, re.I)
+    at = m.end() if m else s.lower().find("<head>") + 6
+    s = s[:at] + block + s[at:]
+    open(path, "w", encoding="utf-8").write(s)
+    return True
+
+
+def cmd_seoheads():
+    import glob as _glob
+    files = [os.path.basename(f) for f in sorted(_glob.glob(os.path.join(PAGES, "*.html")))]
+    files += ["course/" + os.path.basename(f) for f in sorted(_glob.glob(os.path.join(PAGES, "course", "*.html")))]
+    files += ["post/" + os.path.basename(f) for f in sorted(_glob.glob(os.path.join(PAGES, "post", "*.html")))]
+    n = sum(1 for rel in files if enhance_head(rel))
+    print("seoheads: updated %d/%d pages (canonical/OG/Twitter/robots)" % (n, len(files)))
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "check"
     {"sync": cmd_sync, "enhance": cmd_enhance, "check": cmd_check,
-     "sitemap": cmd_sitemap}.get(cmd, lambda: print(__doc__))()
+     "sitemap": cmd_sitemap, "seoheads": cmd_seoheads}.get(cmd, lambda: print(__doc__))()
