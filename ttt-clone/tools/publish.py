@@ -514,7 +514,70 @@ def cmd_seoheads():
     print("seoheads: updated %d/%d pages (canonical/OG/Twitter/robots)" % (n, len(files)))
 
 
+# ---- Listing grid regeneration (single source = the shim, date desc) -------
+# Fixes the stale page-1 grid: the static SSR cards drifted from the shim (which
+# is correctly ordered by publishedAt desc). We rebuild the page-1 cards FROM the
+# shim, using the page's own first card as the structural template and swapping
+# only slug/title/image — so SSR first-paint == the client's shim render
+# (hydration-safe), and any new episode auto-sorts in with no manual patch.
+def _match_div(s, start):
+    depth = 0
+    for m in re.finditer(r'<div\b|</div>', s[start:]):
+        depth += 1 if m.group() != '</div>' else -1
+        if depth == 0:
+            return start + m.end()
+    return -1
+
+
+def _shim_cat(cat_id):
+    src = open(SHIM, encoding="utf-8").read()
+    data = json.loads(re.search(r"var CATS = (\{.*?\});\n", src, re.S).group(1))
+    return data.get(cat_id, {}).get("posts", [])
+
+
+def regen_grid(page, cat_id, card_marker='<div class="blog-post-wrapper-list three-col">'):
+    path = os.path.join(PAGES, page)
+    if not os.path.exists(path):
+        return False
+    s = open(path, encoding="utf-8").read()
+    pos = [m.start() for m in re.finditer(re.escape(card_marker), s)]
+    if not pos:
+        return False
+    spans = [(p, _match_div(s, p)) for p in pos]
+    tmpl = s[spans[0][0]:spans[0][1]]
+    m_slug = re.search(r'/post/([a-z0-9-]+)', tmpl)
+    m_img = re.search(r'(https://(?:assets\.cdn\.filesafe\.space|storage\.googleapis\.com)/[^\s"]+?\.(?:png|jpe?g|webp))', tmpl)
+    m_title = re.search(r'alt="([^"]+)"', tmpl)
+    if not (m_slug and m_img and m_title):
+        return False
+    t_slug, t_img, t_title = m_slug.group(1), m_img.group(1), m_title.group(1)
+    posts = _shim_cat(cat_id)[:len(spans)]  # keep the same page-1 card count
+    if not posts:
+        return False
+
+    def build(p):
+        card = tmpl.replace(t_slug, p["urlSlug"]).replace(t_title, p.get("title", ""))
+        img = p.get("imageUrl", "")
+        if img.startswith("/"):
+            # Local asset: the GHL image optimizer 403s foreign URLs, so collapse
+            # each optimizer-wrapped src/srcset to the direct local path.
+            card = re.sub(r'https://images\.leadconnectorhq\.com/image/[^"\s]*?u_' + re.escape(t_img), img, card)
+        else:
+            card = card.replace(t_img, img)
+        return card
+
+    new = "".join(build(p) for p in posts)
+    s = s[:spans[0][0]] + new + s[spans[-1][1]:]
+    open(path, "w", encoding="utf-8").write(s)
+    return True
+
+
+def cmd_grids():
+    ok = regen_grid("podcast.html", "6878c4aaf07aa601cf0236d1")
+    print("grids: podcast.html page-1 grid %s" % ("regenerated from shim" if ok else "SKIPPED"))
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "check"
     {"sync": cmd_sync, "enhance": cmd_enhance, "check": cmd_check,
-     "sitemap": cmd_sitemap, "seoheads": cmd_seoheads}.get(cmd, lambda: print(__doc__))()
+     "sitemap": cmd_sitemap, "seoheads": cmd_seoheads, "grids": cmd_grids}.get(cmd, lambda: print(__doc__))()
