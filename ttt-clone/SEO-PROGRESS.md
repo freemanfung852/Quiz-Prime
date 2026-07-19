@@ -18,32 +18,43 @@ without Freeman's go-ahead** (live production site).
 ---
 
 ## NOW / NEXT / BLOCKED
-- **NOW:** Wave 0 complete locally (crawler unblocked). Awaiting Freeman's go-ahead to ship.
-- **NEXT:** Wave 1 (sitewide meta/canonical/OG-Twitter + llms.txt + vercel cache headers).
-- **BLOCKED:** shipping to `main`/prod — needs Freeman's confirmation (live shared site).
+- **NOW:** Wave 0 SHIPPED (PR #3 merged → live robots.txt now `Allow: /`). Wave 1 (head meta)
+  done on branch `seo-wave1-head-meta`, opening PR.
+- **NEXT:** Wave 1b — descriptions for 5 uncurated pages; then `llms.txt` + `vercel.json` cache
+  headers; then Wave 2 (richer JSON-LD). Post-merge: verify Wave 1 tags survive hydration on live.
+- **BLOCKED:** nothing. Ship path = branch → PR → merge → Vercel auto-deploy (confirmed working).
+
+## ⚠️ HYDRATION MODEL (learned 2026-07-19 — governs all head/body edits)
+Pages are **Nuxt SSR clones with live client-side hydration**. Verified on a live post:
+- Tags GHL puts in its head config (**canonical, description, og:title/description/image**) are
+  **reconciled/rewritten by Nuxt on hydration** (post canonical became relative `/post/<slug>`).
+- Tags GHL does NOT set (**og:url, og:site_name, og:locale, twitter:\*, og:image:alt**) are left
+  alone → injected versions **survive**.
+- Core pages have NO GHL-managed canonical (live homepage renders `canonical:null`) → injected
+  core-page canonical/description should survive, but **verify on live after each deploy**.
+- **BODY edits** (listing cards, post prose) risk the "content vanishes on hydration" regression
+  the Cris session hit → require patching the Nuxt payload too / browser verification.
 
 ---
 
-## Wave 0 — Indexing cutover  ✅ (local; unshipped)
-- ✅ `tools/publish.py` — `CUTOVER = True` (was False). *verify: line ~44.*
-- ✅ Ran `python3 tools/publish.py sitemap` → `robots.txt` = `User-agent:* / Allow:/ / Sitemap:`;
-  `sitemap.xml` = 65 URLs. *verify: `cat ttt-clone/robots.txt` shows `Allow: /`.*
-- ☐ **SHIP + submit** sitemap in Google Search Console + Bing; request homepage indexing. ⏳ needs go-ahead.
+## Wave 0 — Indexing cutover  ✅ SHIPPED (PR #3 merged, deployed)
+- ✅ `CUTOVER = True`; `robots.txt` → `Allow: /` + `Sitemap:`; `sitemap.xml` = 65 URLs.
+- ✅ Merged via PR #3 → live `www.traveltotransform.com/robots.txt` confirms `Allow: /`.
+- ☐ **Post-ship:** submit sitemap in Google Search Console + Bing; request homepage indexing. (Freeman)
 
-## Wave 1 — Crawl/index foundation (sitewide meta + infra)  ☐
-- ☐ **www vs non-www decision.** Live 301s non-www→www, but `CANONICAL_DOMAIN`/sitemap/canonicals
-  use non-www. Recommend aligning everything to **www** (server already enforces www): set
-  `CANONICAL_DOMAIN = "https://www.traveltotransform.com"`, re-run `enhance` + `sitemap`.
-- ☐ Core-page enhancement stage in `publish.py` (map `slug → {title, description}`): add
-  `meta description` (missing on ≥8: podcast, coaching, appreciation, about, resources, speaking,
-  my-travel-stories, course/tmb…), self `canonical` (missing on all core pages), consistent
-  `<title>` delimiter.
-- ☐ OG/Twitter sitewide (posts via `enhance_post`, core via new stage): `og:url`, `og:site_name`,
-  `twitter:card`+`twitter:*`, `og:image:alt`; fix `og:type` (`blog`→`article`) on 21 podcasts.
-- ☐ `ttt-clone/llms.txt` (new) — AI-crawler manifest (site summary + key URLs). Add explicit
-  `Allow` for GPTBot/ClaudeBot/PerplexityBot/Google-Extended in `robots.txt`.
-- ☐ `vercel.json` `headers` block — `Cache-Control: public, max-age=31536000, immutable` for
-  `/assets/**` + mirrored media; sensible HTML cache. (Shared with Wave 4.)
+## Wave 1 — Crawl/index foundation (head meta)  ✅ done (branch `seo-wave1-head-meta`, PR opening)
+- ✅ **www vs non-www:** non-www serves 200 directly (no redirect) → kept `CANONICAL_DOMAIN` = non-www.
+- ✅ New self-contained `cmd_seoheads()` in `publish.py` (`enhance_head`) — reads meta from each
+  page's HTML (GHL API dead), adds only MISSING head tags inside `<!--ttt-seo-->` markers. Idempotent.
+- ✅ Canonical on **all 32 indexable non-post pages** (were 0); `noindex,follow` on 16 funnel/system pages.
+- ✅ OG/Twitter sitewide: `og:url`, `og:site_name`, `og:locale`, `twitter:card/title/description/image`,
+  `og:image:alt` — added where missing (skips posts' existing tags; 0 duplicate canonicals).
+- ✅ Curated `meta description` for 16 core public pages (DRAFT copy — refine in TTT voice).
+- ☐ **Wave 1b:** 5 pages still need descriptions — `anf-free`, `additional-accelerator(-page)`,
+  `course-pre-launch-sign-up`, `newsletter-qr` (didn't invent copy; need Freeman input).
+- ☐ `ttt-clone/llms.txt` (new) — AI-crawler manifest. Add explicit AI-bot `Allow` in `robots.txt`.
+- ☐ `vercel.json` `headers` block — long cache for `/assets/**`. (Shared with Wave 4.)
+- ⏳ **Post-merge verify:** confirm injected canonical/description survive Nuxt hydration on live core pages.
 
 ## Wave 2 — Structured-data depth (AEO/GEO)  ☐  *[parallel: Agent Schema]*
 - ☐ `enhance_post`: add `publisher.logo` (fixes invalid Article rich results) + `sameAs`
