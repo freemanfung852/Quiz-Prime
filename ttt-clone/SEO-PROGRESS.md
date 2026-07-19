@@ -18,10 +18,10 @@ without Freeman's go-ahead** (live production site).
 ---
 
 ## NOW / NEXT / BLOCKED
-- **NOW:** Wave 0 SHIPPED (PR #3 merged → live robots.txt now `Allow: /`). Wave 1 (head meta)
-  done on branch `seo-wave1-head-meta`, opening PR.
-- **NEXT:** Wave 1b — descriptions for 5 uncurated pages; then `llms.txt` + `vercel.json` cache
-  headers; then Wave 2 (richer JSON-LD). Post-merge: verify Wave 1 tags survive hydration on live.
+- **NOW:** Wave 0 (PR #3) + Wave 1 head meta (PR #4) SHIPPED. Wave 1b (GSC verify tag + www→non-www
+  301 + 5 descriptions) done on branch `seo-wave1b-gsc-redirect-desc`, opening PR.
+- **NEXT:** `llms.txt` + `vercel.json` cache headers; then Wave 2 (richer JSON-LD). Post-merge:
+  verify head tags survive hydration on live core pages; Freeman completes GSC verification.
 - **BLOCKED:** nothing. Ship path = branch → PR → merge → Vercel auto-deploy (confirmed working).
 
 ## ⚠️ HYDRATION MODEL (learned 2026-07-19 — governs all head/body edits)
@@ -50,10 +50,14 @@ Pages are **Nuxt SSR clones with live client-side hydration**. Verified on a liv
 - ✅ OG/Twitter sitewide: `og:url`, `og:site_name`, `og:locale`, `twitter:card/title/description/image`,
   `og:image:alt` — added where missing (skips posts' existing tags; 0 duplicate canonicals).
 - ✅ Curated `meta description` for 16 core public pages (DRAFT copy — refine in TTT voice).
-- ☐ **Wave 1b:** 5 pages still need descriptions — `anf-free`, `additional-accelerator(-page)`,
-  `course-pre-launch-sign-up`, `newsletter-qr` (didn't invent copy; need Freeman input).
+- ✅ **Wave 1b (branch `seo-wave1b-gsc-redirect-desc`):** drafted descriptions for all 5 pages from
+  page content (`anf-free`, `additional-accelerator(-page)`, `course-pre-launch-sign-up`, `newsletter-qr`).
+- ✅ **Google Search Console** verification `<meta google-site-verification>` on homepage only.
+- ✅ **www → non-www 301** in `vercel.json` (host `has` redirect, first rule) so Google sees one host.
 - ☐ `ttt-clone/llms.txt` (new) — AI-crawler manifest. Add explicit AI-bot `Allow` in `robots.txt`.
 - ☐ `vercel.json` `headers` block — long cache for `/assets/**`. (Shared with Wave 4.)
+- ⚠️ Parked: `additional-accelerator`, `additional-accelerator-page`, `coaching-form` are near-duplicate
+  coaching-form pages → consider consolidating/cross-canonicalising later (duplicate-content).
 - ⏳ **Post-merge verify:** confirm injected canonical/description survive Nuxt hydration on live core pages.
 
 ## Wave 2 — Structured-data depth (AEO/GEO)  ☐  *[parallel: Agent Schema]*

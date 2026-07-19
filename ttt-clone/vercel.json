@@ -3,6 +3,7 @@
   "cleanUrls": false,
   "trailingSlash": false,
   "redirects": [
+    { "source": "/:path*", "has": [{ "type": "host", "value": "www.traveltotransform.com" }], "destination": "https://traveltotransform.com/:path*", "statusCode": 301 },
     { "source": "/404", "destination": "/page-not-found", "statusCode": 301 },
     { "source": "/index.html", "destination": "/page-not-found", "statusCode": 301 },
     { "source": "/blogs", "destination": "/page-not-found", "statusCode": 301 },

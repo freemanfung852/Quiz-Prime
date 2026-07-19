@@ -376,6 +376,8 @@ def cmd_check():
 SITE_NAME = "Travel to Transform"
 OG_LOCALE = "en_US"
 SEO_BEGIN, SEO_END = "<!--ttt-seo-->", "<!--/ttt-seo-->"
+# Google Search Console HTML-tag verification (homepage only). Public token.
+GOOGLE_SITE_VERIFICATION = "n_Y3ZpsZr623nx6Oq4RZ0MRswGAvsGRade74VPA3syM"
 # Curated meta descriptions for indexable pages that ship none. DRAFT copy —
 # refine in TTT brand voice. Keyed by canonical path. Pages not listed keep
 # whatever description they already have (or none).
@@ -396,6 +398,11 @@ SEO_DESCRIPTIONS = {
     "/media-contact": "Media and press enquiries for Freeman Fung and Travel to Transform — reach out for interviews, features and speaking opportunities.",
     "/privacy-policy": "Travel to Transform privacy policy — how we collect, use and protect your personal information.",
     "/terms-of-use": "Travel to Transform terms of use — the terms and conditions governing your use of this website and our services.",
+    "/anf-free": "Athens Nomad Fest attendees — claim your free digital copy of Freeman Fung's bestselling book, Travel to Transform, plus exclusive attendee-only gifts.",
+    "/additional-accelerator": "Apply for 1:1 transformational coaching with Freeman Fung — fill out the coaching application form and take the next step on your journey.",
+    "/additional-accelerator-page": "Apply for 1:1 transformational coaching with Freeman Fung — fill out the coaching application form and take the next step on your journey.",
+    "/course-pre-launch-sign-up": "Join the waitlist for Freeman Fung's Travel Mastery Blueprint — an interactive course that turns his book's teaching into a lifelong blueprint for travel mastery.",
+    "/newsletter-qr": "Join the Travel to Transform newsletter for life-changing travel stories, soulful growth prompts, and early access to retreats, events and exclusive offers.",
 }
 
 
@@ -440,6 +447,8 @@ def enhance_head(relpath):
         if not _present(head, r'<meta[^>]+name=["\']robots["\']'):
             lines.append('<meta name="robots" content="noindex,follow">')
     else:
+        if _url_path(relpath) == "/" and GOOGLE_SITE_VERIFICATION and not _present(head, r'google-site-verification'):
+            lines.append('<meta name="google-site-verification" content="%s">' % GOOGLE_SITE_VERIFICATION)
         og_title = _meta_content(head, "property", "og:title")
         og_image = _meta_content(head, "property", "og:image")
         og_desc = _meta_content(head, "property", "og:description")
