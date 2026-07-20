@@ -17,34 +17,61 @@ without Freeman's go-ahead** (live production site).
 
 ---
 
+## ⚠️ WORKTREE NOTICE (2026-07-20)
+This branch is being developed in an **isolated git worktree** at `/Users/freedom/ttt-podcast-wt`
+because a **concurrent session was branch-switching the shared `~/ttt-website` tree** and auto-
+stashed this work mid-flight. Continue in the worktree (`cd /Users/freedom/ttt-podcast-wt`) to
+avoid collisions. `git worktree remove` it once merged.
+
 ## NOW / NEXT / BLOCKED
-- **NOW:** Fresh-session bundle IN PROGRESS. **PR 1 — podcast grid rebuild: DONE on branch
-  `fix-podcast-grid-rebuild`**, awaiting Freeman's login-gated preview verification + merge.
+- **NOW:** **PR 1 (branch `fix-podcast-grid-rebuild`, PR #14) has TWO commits:**
+  1. `3a43900` static-grid rebuild ✅ (data/SSR fix — solid).
+  2. `2ac66b5` **runtime grid takeover (eject) — WIP, NOT yet browser-validated.**
+  The static fix alone did NOT fix the live bug (see below). ⏳ **Runtime fix needs Vercel-preview
+  validation before merge.**
 - **NEXT (this session, in order):** Bug C header/footer → Wave 3 body content → runtime image
   optimisation. Each = own branch/PR, per-page browser verification before merge.
-- **BLOCKED:** nothing standalone remains — everything left is hydration-coupled.
+- **BLOCKED:** PR 1 merge blocked on validating the runtime takeover on the login-gated preview.
 
-### PR 1 — Podcast grid rebuild ✅ (branch `fix-podcast-grid-rebuild`)
-- **Root-cause refinement (verified in the live clone files):** the "3 places" is really 2 here.
-  `window.__NUXT__` on podcast.html is **config-only (4.1 KB, no card payload)** — nothing to
-  patch. The sole post-hydration authority is the `blogs/posts/list` fetch, served by
-  `ghl-offline-data.js`. PR #7 desynced because it edited only the static grid; the catalog was
-  stale. **The catalog is now already 100% in sync with `podcast-episodes.json`** (same order,
-  Beyonder #1, 0 field diffs on all 22 — the `manual-beyonder` entry from a prior session fixed
-  it). So the ONLY remaining desync was the static page-1 grid (still wonderlab-first, Beyonder
-  absent).
-- **Fix:** new idempotent `publish.py podcastgrid` command. Single source = `podcast-episodes.json`.
-  It regenerates the static page-1 grid (6 cards, newest-first, Beyonder #1) inside
-  `<!--ttt-podcast-grid-->` markers, and OWNS the `ghl-offline-data.js` podcast array — rewriting
-  it from the JSON (merge-preserving rich fields) **only if it drifts**. This run: catalog already
-  in sync → **0 bytes changed in `ghl-offline-data.js`**. Blog + book-review categories untouched.
-- **Scope proof:** only `podcast.html` (grid region only — head/tail byte-identical to `origin/main`)
-  + `tools/publish.py` changed. Quiz, GHL forms, `vercel.json`, catalog: untouched.
-- **Freeze-script fallback:** NOT shipped (documented only). Add a page-scoped post-hydration
-  repaint to `podcast.html` **only if** Freeman's preview shows the grid drifting after hydration.
-- ⏳ **Verify (Freeman, login-gated preview):** per-card checklist handed in chat — confirm each of
-  the 6 page-1 cards shows title == link == image == same episode on the RENDERED DOM after
-  hydration, clicked through, before merge.
+### PR 1 — Podcast grid (branch `fix-podcast-grid-rebuild`, PR #14)
+**Commit 1 `3a43900` — static grid rebuild ✅ (the SSR/data half).**
+- Root cause of the *static* desync: `window.__NUXT__` on podcast.html is config-only (4.1 KB, no
+  card payload) — the sole post-hydration authority is the `blogs/posts/list` fetch from
+  `ghl-offline-data.js`, whose catalog is already 100% in sync with `podcast-episodes.json`
+  (Beyonder #1, 0 field diffs on all 22). The only stale surface was the static page-1 grid.
+- New idempotent `publish.py podcastgrid`: single source `podcast-episodes.json`; regenerates the
+  static page-1 grid inside `<!--ttt-podcast-grid-->` markers; owns the `ghl-offline-data.js`
+  podcast array (rewrites only on drift — 0 bytes changed this run). Blog/book-reviews untouched.
+
+**Commit 2 `2ac66b5` — runtime grid takeover (EJECT) — ⏳ WIP, needs Vercel validation.**
+- **The real bug (reproduced live):** GHL's blog-list **Vue component is a compiled third-party
+  CDN chunk we cannot edit**, and its v-for is not stably keyed. On hard refresh it hydrates
+  against our correct SSR grid and **recycles nodes into mismatched title/link/image cards,
+  dropping Beyonder** (rendered catalog[1:7]). It **self-heals on any re-render** (paginate away
+  and back → byte-perfect: Beyonder #1, title==link==image, 0 dup imgs). Classic index-key +
+  stale-lazy recycling — confirmed by live browser inspection, not theory.
+- **Because we can't patch GHL's `:key`,** the fix owns the render page-side (Cris's step-4 path):
+  - `ttt-podcast-grid.js` — single keyed source `window.__TTT_PODCAST__`; renders grid+pagination
+    keyed by slug, title/link/image as one unit, native lazy `<img>`. **EJECT strategy:** clone
+    the grid + pagination nodes and swap the clones into the DOM so Vue keeps patching the
+    detached originals off-screen and can never overwrite us. Eject fires **after** hydration
+    (MutationObserver signal + fallback timer). A guard observer drops any GHL-injected grid.
+  - `ghl-offline-data.js` — starve ONLY the podcast category (gated on `window.__TTT_OWN_GRID__`)
+    so GHL never populates this grid. All other pages/categories untouched.
+  - `publish.py cmd_podcastgrid` also wires the inline single-source + a **content-hashed**
+    `<script src="/ttt-podcast-grid.js?v=…">` into podcast.html (cache-bust on every deploy).
+- **What IS validated (local):** an earlier renderer iteration passed 5× hard-refresh + pagination
+  at the DATA level (Beyonder #1, title==link==image, 0 dup imgs, stable). Found + fixed a
+  nested-card bug (missing closing `</div>` in the JS card template).
+- **What is NOT validated:** (a) the **eject** refinement's data correctness (branch was yanked by
+  the concurrent-session stash before I could re-run the 5× test on it); (b) **3-column visual
+  layout** — the local static server collapses the whole blog column to 0-width **for GHL's native
+  render too** (environment artifact, not our regression), so layout can only be confirmed on
+  Vercel. Our cards use byte-identical classes to GHL's, so layout parity is expected.
+- ⏳ **NEXT STEP (validate on Vercel preview):** hard-refresh 5× AND paginate to page 2 and back;
+  confirm every visible card shows title == link == image == same episode with **zero duplicate
+  images** in BOTH states, and the grid lays out 3-col. If the eject flickers or Vue re-adopts,
+  the fallback is to tune the eject timing or fully detach at the `.hl-blog-post-home` level.
 
 ## 🔒 FRESH SESSION — hydration-sensitive work (do NOT touch piecemeal)
 **Why grouped:** all three re-render/replace client-hydrated DOM; each needs per-page browser
