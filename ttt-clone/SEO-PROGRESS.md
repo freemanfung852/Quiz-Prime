@@ -140,6 +140,32 @@ leaves the old `data-ttt-seo` BlogPosting blocks in place; no grids/shim/body/fo
 
 ---
 
+## Standalone pages
+- ✅ **`/newsletter`** (2026-07-20, branch `newsletter-page`, PR): dedicated public opt-in page
+  restored (lost in migration) as a funnel/keynote destination. New file
+  `traveltotransform.com/newsletter.html` based on the `podcast.html` static shell (full global
+  header/nav/footer + inline CSS). **Authored fresh with NO legacy Nuxt payload** — the
+  `__NUXT_DATA__` content payload + `_preview/*` runtime module + 41 preload hints were dropped, so
+  the page is fully static (zero PR#7-style hydration/desync surface). Mobile hamburger was
+  runtime-wired, so a ~6-line vanilla `hide-popup`/`submenu-mobile-active` toggle restores it
+  (browser-verified: opens overlay + X closes). **Embeds the live "Newsletter" GHL form
+  (`Pqnb4CZblVGr0uxznfWj`) — distinct from the site-wide Footer form (`DFQZnEZ3zuA8L487qDE2`)** —
+  via the direct `connect.unwiz.ai/widget/form/…` iframe + `form_embed.js` (full_name/email/consent/
+  submit). Form appears **once** (hero only); the newsletter column was removed from this page's
+  footer (both mobile+desktop) leaving links/social/copyright/Instagram intact. The Newsletter form
+  is light-designed (white bg, dark labels, its own blue border, gold Submit), so the hero card is
+  **white** with a soft shadow (NOT the footer form's `#187cb5` blue — verified on preview). Hero
+  copy = the general "travel as a gateway to personal evolution" positioning (headline/subcopy/
+  consent), with matching `og:title`/`og:description`/`twitter:*`. Hero has an empty
+  `.nl-hero__gallery[hidden]` placeholder for a future image drop-in (no rebuild). `/newsletter`
+  rewrite in `vercel.json` (mirrors `/quiz`), sitemap entry + self-canonical + OG/Twitter meta
+  (indexable, `og:locale en_US`, title casing "Travel To Transform"). UTM params pass through
+  (static page, no query parsing; verified no horizontal overflow). NB: the form's post-submit
+  thank-you message lives inside the cross-origin `connect.unwiz.ai` iframe and is handled in GHL —
+  not styleable from the page (do not add CSS/JS targeting iframe internals).
+  ⏳ **CRM verify (Freeman):** one real submission → lands in GHL, records newsletter consent,
+  respects DND/unsubscribe, fires the welcome (Soap Opera) sequence.
+
 ## Notes / decisions log
 - 2026-07-19: Wave 0 done locally on branch `seo-aeo-geo-optim`. Crawler block was the #1 issue
   (live `robots.txt` was `Disallow: /`). Not yet pushed/deployed — awaiting go-ahead.
