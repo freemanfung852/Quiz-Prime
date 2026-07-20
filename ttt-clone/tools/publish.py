@@ -739,6 +739,50 @@ def _rebuild_static_grid(eps):
     return s2 != s
 
 
+# Runtime takeover markers (podcast.html only).
+PODCAST_DATA_BEGIN, PODCAST_DATA_END = "<!--ttt-podcast-data-->", "<!--/ttt-podcast-data-->"
+PODCAST_JS_BEGIN, PODCAST_JS_END = "<!--ttt-podcast-grid-js-->", "<!--/ttt-podcast-grid-js-->"
+
+
+def _splice_markers(s, begin, end, block, before, last=True):
+    """Idempotently place `begin+block+end`: replace between markers if present,
+    else insert immediately before `before` (last occurrence if `last`, else first)."""
+    if begin in s and end in s:
+        return re.sub(re.escape(begin) + r".*?" + re.escape(end), begin + block + end,
+                      s, count=1, flags=re.S)
+    i = s.rfind(before) if last else s.find(before)
+    if i < 0:
+        raise SystemExit("podcastgrid: could not find %r to anchor %s" % (before, begin))
+    return s[:i] + begin + block + end + s[i:]
+
+
+def _wire_podcast_runtime(eps):
+    """Inject the single keyed source + the owned renderer into podcast.html.
+    The inline <head> block sets window.__TTT_OWN_GRID__ BEFORE any GHL script
+    runs (so ghl-offline-data.js starves the podcast fetch) and exposes
+    window.__TTT_PODCAST__ (title/url/image/slug per episode). The deferred
+    <script> loads the renderer. Page-scoped to podcast.html only."""
+    path = os.path.join(PAGES, "podcast.html")
+    s = open(path, encoding="utf-8").read()
+    src = [{"title": e["title"], "url": e["url"], "image": e["image"], "slug": e["slug"]}
+           for e in eps]
+    payload = json.dumps(src, separators=(",", ":"), ensure_ascii=False).replace("</", "<\\/")
+    data_block = ('<script>window.__TTT_OWN_GRID__=true;window.__TTT_PODCAST__=%s;</script>'
+                  % payload)
+    # Content-hash the renderer so every deploy busts the browser/CDN cache.
+    import hashlib
+    js_path = os.path.join(ROOT, "ttt-podcast-grid.js")
+    ver = hashlib.sha1(open(js_path, "rb").read()).hexdigest()[:8] if os.path.exists(js_path) else "0"
+    js_block = '<script src="/ttt-podcast-grid.js?v=%s" defer></script>' % ver
+    # Flag must be live before ANY GHL script runs -> anchor before the 1st <script.
+    s = _splice_markers(s, PODCAST_DATA_BEGIN, PODCAST_DATA_END, data_block, "<script", last=False)
+    s = _splice_markers(s, PODCAST_JS_BEGIN, PODCAST_JS_END, js_block, "</body>")
+    changed = s != open(path, encoding="utf-8").read()
+    if changed:
+        open(path, "w", encoding="utf-8").write(s)
+    return changed
+
+
 def _match_bracket(text, open_idx):
     """Return index just past the ']' matching the '[' at open_idx, string-aware."""
     depth = 0
@@ -809,6 +853,7 @@ def cmd_podcastgrid():
     if not eps:
         raise SystemExit("podcastgrid: podcast-episodes.json is empty/missing")
     changed_grid = _rebuild_static_grid(eps)
+    changed_runtime = _wire_podcast_runtime(eps)
 
     js = open(SHIM, encoding="utf-8").read()
     existing = _catalog_posts(js)
@@ -829,9 +874,9 @@ def cmd_podcastgrid():
         open(SHIM, "w", encoding="utf-8").write(js)
         cat_state = "REWROTE podcast array (%d posts) from JSON" % len(desired)
 
-    print("podcastgrid: static grid %s (page-1 = %d of %d eps); catalog %s" % (
-        "regenerated" if changed_grid else "unchanged", min(GRID_PAGE_SIZE, len(eps)),
-        len(eps), cat_state))
+    print("podcastgrid: static grid %s; runtime %s; catalog %s (source: %d eps)" % (
+        "regenerated" if changed_grid else "unchanged",
+        "wired" if changed_runtime else "unchanged", cat_state, len(eps)))
 
 
 if __name__ == "__main__":
