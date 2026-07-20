@@ -22,6 +22,7 @@
     { "source": "/course", "destination": "/traveltotransform.com/course/tmb.html" },
     { "source": "/tmb", "destination": "/traveltotransform.com/tmb-offers-checkout.html" },
     { "source": "/quiz", "destination": "/traveltotransform.com/the-traveller-dna-quiz.html" },
+    { "source": "/newsletter", "destination": "/traveltotransform.com/newsletter.html" },
     { "source": "/:page", "destination": "/traveltotransform.com/:page.html" }
   ]
 }

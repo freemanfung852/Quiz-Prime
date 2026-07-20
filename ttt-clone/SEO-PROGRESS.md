@@ -140,6 +140,26 @@ leaves the old `data-ttt-seo` BlogPosting blocks in place; no grids/shim/body/fo
 
 ---
 
+## Standalone pages
+- ✅ **`/newsletter`** (2026-07-20, branch `newsletter-page`, PR): dedicated public opt-in page
+  restored (lost in migration) as a funnel/keynote destination. New file
+  `traveltotransform.com/newsletter.html` based on the `podcast.html` static shell (full global
+  header/nav/footer + inline CSS). **Authored fresh with NO legacy Nuxt payload** — the
+  `__NUXT_DATA__` content payload + `_preview/*` runtime module + 41 preload hints were dropped, so
+  the page is fully static (zero PR#7-style hydration/desync surface). Mobile hamburger was
+  runtime-wired, so a ~6-line vanilla `hide-popup`/`submenu-mobile-active` toggle restores it
+  (browser-verified: opens overlay + X closes). **Reuses the live footer newsletter form
+  (`DFQZnEZ3zuA8L487qDE2`) verbatim** via the direct `connect.unwiz.ai/widget/form/…` iframe +
+  `form_embed.js` — same CRM/consent/welcome wiring, no new form. Form appears **once** (hero only);
+  the newsletter column was removed from this page's footer (both mobile+desktop) leaving
+  links/social/copyright/Instagram intact. Form card uses the footer's `#187cb5` blue (the bg this
+  form's white text is designed for). Hero has an empty `.nl-hero__gallery[hidden]` placeholder for
+  a future image drop-in (no rebuild). `/newsletter` rewrite added to `vercel.json` (mirrors
+  `/quiz`), sitemap entry + self-canonical + OG/Twitter meta (indexable, `og:locale en_US`).
+  UTM params pass through (static page, no query parsing; verified no horizontal overflow).
+  ⏳ **CRM verify (Freeman):** one real submission → lands in GHL, records newsletter consent,
+  respects DND/unsubscribe, fires the welcome (Soap Opera) sequence.
+
 ## Notes / decisions log
 - 2026-07-19: Wave 0 done locally on branch `seo-aeo-geo-optim`. Crawler block was the #1 issue
   (live `robots.txt` was `Disallow: /`). Not yet pushed/deployed — awaiting go-ahead.
