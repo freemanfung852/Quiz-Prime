@@ -1,4 +1,4 @@
-/* Travel to Transform clone — live GHL form embeds.
+/* Travel to Transform clone — shared browser fixes and live GHL form embeds.
  *
  * WHY: the scraped pages render their GHL forms natively inline, baked in at
  * scrape time. Those copies are frozen — edit a form in GHL (fields, workflow
@@ -16,6 +16,37 @@
  *
  * Order forms (`.c-order`) are handled separately by ghl-order-forms.js.
  */
+
+/* GHL's hydrated image-link handler can turn internal links into malformed
+ * `https:///...` URLs after a client-side route change. Force same-tab,
+ * same-origin links to perform a normal document navigation instead. This is
+ * especially important for the header logo, which must always load `/`.
+ */
+(function () {
+  function navigate(e) {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var target = e.target;
+    var a = target && target.closest ? target.closest('a[href]') : null;
+    if (!a || a.hasAttribute('download')) return;
+
+    var linkTarget = (a.getAttribute('target') || '').toLowerCase();
+    if (linkTarget && linkTarget !== '_self') return;
+
+    var href = a.getAttribute('href');
+    if (!href || href.charAt(0) === '#' || /^(?:mailto:|tel:|javascript:|data:)/i.test(href)) return;
+
+    var url;
+    try { url = new URL(href, location.href); } catch (err) { return; }
+    if (url.origin !== location.origin) return;
+
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    location.assign(url.href);
+  }
+
+  window.addEventListener('click', navigate, true);
+})();
+
 (function () {
   var HOST = 'https://connect.unwiz.ai';   // whitelabel form domain on Freeman's GHL
   var NAMES = {
