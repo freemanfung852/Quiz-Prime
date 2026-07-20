@@ -8,7 +8,13 @@
     { "source": "/404", "destination": "/page-not-found", "statusCode": 301 },
     { "source": "/index.html", "destination": "/page-not-found", "statusCode": 301 },
     { "source": "/blogs", "destination": "/page-not-found", "statusCode": 301 },
-    { "source": "/media", "destination": "/page-not-found", "statusCode": 301 }
+    { "source": "/media", "destination": "/page-not-found", "statusCode": 301 },
+    { "source": "/course", "destination": "/course/tmb", "statusCode": 301 },
+    { "source": "/podcast/category/podcast", "destination": "/podcast", "statusCode": 301 },
+    { "source": "/blog/category/blogpost", "destination": "/blog", "statusCode": 301 },
+    { "source": "/book-reviews/category/book-reviews", "destination": "/book-reviews", "statusCode": 301 },
+    { "source": "/book-reviews/author/:author", "destination": "/book-reviews", "statusCode": 301 },
+    { "source": "/blog/what-is-global-citizenship", "destination": "/post/what-is-global-citizenship", "statusCode": 301 }
   ],
   "headers": [
     { "source": "/assets/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000, stale-while-revalidate=86400" }] }
@@ -19,7 +25,6 @@
     { "source": "/page-not-found", "destination": "/traveltotransform.com/404.html" },
     { "source": "/post/:slug", "destination": "/traveltotransform.com/post/:slug.html" },
     { "source": "/course/:slug", "destination": "/traveltotransform.com/course/:slug.html" },
-    { "source": "/course", "destination": "/traveltotransform.com/course/tmb.html" },
     { "source": "/tmb", "destination": "/traveltotransform.com/tmb-offers-checkout.html" },
     { "source": "/quiz", "destination": "/traveltotransform.com/the-traveller-dna-quiz.html" },
     { "source": "/:page", "destination": "/traveltotransform.com/:page.html" }

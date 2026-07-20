@@ -23,6 +23,9 @@
  * especially important for the header logo, which must always load `/`.
  */
 (function () {
+  if (window.__tttSameOriginNavigationInstalled) return;
+  window.__tttSameOriginNavigationInstalled = true;
+
   function navigate(e) {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     var target = e.target;
@@ -47,8 +50,57 @@
   window.addEventListener('click', navigate, true);
 })();
 
+/* Stable anchors for responsive speaking-page sections. GHL gives the desktop
+ * and mobile copies generated ids, so links to human-readable fragments would
+ * otherwise land nowhere. Move one anchor before whichever copy is visible. */
+(function () {
+  if (location.pathname.replace(/\/+$/, '') !== '/speaking') return;
+
+  function visible(el) {
+    return el && window.getComputedStyle(el).display !== 'none' && el.getClientRects().length > 0;
+  }
+
+  function place(id, selectors) {
+    var anchor = document.getElementById(id);
+    if (!anchor) {
+      anchor = document.createElement('span');
+      anchor.id = id;
+      anchor.setAttribute('aria-hidden', 'true');
+    }
+
+    var target = null;
+    for (var i = 0; i < selectors.length; i++) {
+      var candidate = document.querySelector(selectors[i]);
+      if (!target && candidate) target = candidate;
+      if (visible(candidate)) { target = candidate; break; }
+    }
+    if (target && target.parentNode) target.parentNode.insertBefore(anchor, target);
+
+    if (location.hash === '#' + id && !anchor.getAttribute('data-ttt-scrolled')) {
+      anchor.setAttribute('data-ttt-scrolled', 'true');
+      requestAnimationFrame(function () { anchor.scrollIntoView(); });
+    }
+  }
+
+  function placeAnchors() {
+    place('mindvalley-feature', ['#section-THZYexGtHC', '#section-PMLP6iZwMA']);
+    place('booking-form', ['#section-Cf0_OypN7G', '#section-7ejH1KY26r']);
+  }
+
+  function scheduleAnchors() { setTimeout(placeAnchors, 1000); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scheduleAnchors, { once: true });
+  else scheduleAnchors();
+  window.addEventListener('resize', placeAnchors);
+})();
+
 (function () {
   var HOST = 'https://connect.unwiz.ai';   // whitelabel form domain on Freeman's GHL
+  var NEXT_STEPS = {
+    'anf-free': ['kJdPp16RLXEdiFb4vPQS', '/ebook-download-thank-you'],
+    'dnf-free': ['Vtxdc9IwM2QIdQkPBJDq', '/ebook-download-thankyou'],
+    'additional-accelerator': ['TOsnKn8148rDyymmtY6Z', '/checkout-accelerator'],
+    'additional-accelerator-page': ['TOsnKn8148rDyymmtY6Z', '/checkout-accelerator-page']
+  };
   var NAMES = {
     fwdksuE2rkdxnQvRjW4G: 'Masterclass Form',
     lXV21cVWhFRV7yjVkSz0: 'Quiz Form',
@@ -69,6 +121,23 @@
 
   var scriptLoaded = false;
 
+  function pathKey() {
+    return location.pathname.replace(/^\/+|\/+$/g, '').replace(/\.html$/, '');
+  }
+
+  function isVisible(el) {
+    var style = window.getComputedStyle(el);
+    var rect = el.getBoundingClientRect();
+    return style.display !== 'none' &&
+      style.visibility !== 'hidden' &&
+      rect.width > 0 && rect.height > 0;
+  }
+
+  function iframeIdFor(container, formId) {
+    var suffix = (container.id || 'form').replace(/[^A-Za-z0-9_-]/g, '-');
+    return 'inline-' + formId + '-' + suffix;
+  }
+
   function formIdOf(container) {
     var els = container.querySelectorAll('[id^="el_"]');
     for (var i = 0; i < els.length; i++) {
@@ -81,17 +150,18 @@
   function embed(container, formId, height) {
     var name = NAMES[formId] || 'Form';
     var h = Math.max(height || 0, 420);
+    var iframeId = iframeIdFor(container, formId);
     container.innerHTML =
       '<iframe src="' + HOST + '/widget/form/' + formId + '"' +
       ' style="width:100%;min-height:' + h + 'px;border:none;border-radius:8px"' +
-      ' id="inline-' + formId + '"' +
+      ' id="' + iframeId + '"' +
       ' data-layout="{\'id\':\'INLINE\'}"' +
       ' data-trigger-type="alwaysShow" data-trigger-value=""' +
       ' data-activation-type="alwaysActivated" data-activation-value=""' +
       ' data-deactivation-type="neverDeactivate" data-deactivation-value=""' +
       ' data-form-name="' + name + '"' +
       ' data-height="' + h + '"' +
-      ' data-layout-iframe-id="inline-' + formId + '"' +
+      ' data-layout-iframe-id="' + iframeId + '"' +
       ' data-form-id="' + formId + '"' +
       ' title="' + name + '"></iframe>';
     container.setAttribute('data-ttt-live-form', formId);
@@ -110,7 +180,10 @@
       var c = boxes[i];
       var done = c.getAttribute('data-ttt-live-form');
       // already embedded and the iframe is still there -> nothing to do
-      if (done && c.querySelector('#inline-' + done)) continue;
+      if (done && c.querySelector('iframe[data-form-id="' + done + '"]')) continue;
+      // GHL pages carry separate desktop/mobile copies. Do not load the hidden
+      // copy until it is actually shown at a breakpoint or inside a popup.
+      if (!isVisible(c)) continue;
       var fid = formIdOf(c);
       if (!fid) continue;             // not hydrated yet; try again next tick
       embed(c, fid, c.getBoundingClientRect().height);
@@ -121,8 +194,38 @@
     swap();
     new MutationObserver(swap).observe(document.documentElement, { childList: true, subtree: true });
     setInterval(swap, 1500);
+    window.addEventListener('resize', swap);
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
-  else start();
+  // Give Nuxt one second after DOMContentLoaded to finish hydration. Waiting
+  // for window.load can stall forms behind slow images and third-party media.
+  function scheduleStart() { setTimeout(start, 1000); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scheduleStart, { once: true });
+  else scheduleStart();
+
+  // A standalone GHL iframe does not know the original funnel's "next step".
+  // GHL emits set-sticky-contacts with the iframe id after a successful lead
+  // capture. Restore the four native funnel transitions only for the expected
+  // form on the expected page.
+  window.addEventListener('message', function (event) {
+    var next = NEXT_STEPS[pathKey()];
+    if (!next || event.origin !== HOST || !Array.isArray(event.data)) return;
+    if (event.data[0] !== 'set-sticky-contacts') return;
+
+    var payload = event.data[2];
+    var hasStringId = typeof payload === 'string';
+    var hasCookiePayload = payload && typeof payload === 'object';
+    if (!hasStringId && !hasCookiePayload) return;
+
+    var iframes = document.querySelectorAll('.c-form iframe[data-form-id="' + next[0] + '"]');
+    var matched = false;
+    for (var i = 0; i < iframes.length; i++) {
+      if (event.source === iframes[i].contentWindow && (!hasStringId || payload === iframes[i].id)) {
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) return;
+    location.assign(next[1]);
+  });
 })();
