@@ -81,6 +81,10 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://traveltotransform.com/newsletter</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://traveltotransform.com/newsletter-qr</loc>
     <priority>0.7</priority>
   </url>
