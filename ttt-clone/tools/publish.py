@@ -635,8 +635,207 @@ def cmd_jsonld():
     print("jsonld: injected data-ttt-schema on %d pages" % n)
 
 
+# ---- Podcast grid rebuild (durable single-source fix) --------------------
+# podcast-episodes.json is the SINGLE source. This command regenerates BOTH
+# consumers from it so the "card exists in 3 places" desync (PR #7/#9) is
+# structurally impossible:
+#   (1) the static /podcast grid (page-1 paint, in podcast.html), and
+#   (2) the podcast category in ghl-offline-data.js (the fetch catalog Nuxt
+#       re-renders from after hydration -- the sole post-hydration authority).
+# window.__NUXT__ on podcast.html is config-only (no card payload), so there is
+# no third place to patch in this clone. The generator OWNS both consumers;
+# array order in the JSON == grid order (newest-first, Beyonder #1). It only
+# rewrites the catalog if it has drifted from the JSON, keeping this file's
+# working hydration payload byte-stable when it is already in sync.
+PODCAST_GRID_BEGIN = "<!--ttt-podcast-grid-->"
+PODCAST_GRID_END = "<!--/ttt-podcast-grid-->"
+# First-run anchors: the Vue v-for fragment that wraps the page-1 cards. Unique
+# in podcast.html. After the first run the BEGIN/END markers are the anchors.
+GRID_OPEN_ANCHOR = '<div class="blog-post-wrapper"><!--[-->'
+GRID_CLOSE_ANCHOR = '<!--]--></div></div><div class="flex items-center justify-center mt-10">'
+PODCAST_CAT_ID = "6878c4aaf07aa601cf0236d1"
+GRID_PAGE_SIZE = 6  # cards painted statically for page 1 (matches the live 6/page UX)
+
+
+def _lc_opt(img, r):
+    return "https://images.leadconnectorhq.com/image/f_webp/q_80/r_%d/u_%s" % (r, img)
+
+
+def _podcast_picture(img, alt):
+    """Card image markup. Remote http(s) images go through the LC optimizer
+    <picture> (source is a public CDN -> works on the login-gated preview too).
+    Local /assets images render as a plain <img> -- the optimizer cannot wrap a
+    relative URL and would 404 on the preview host."""
+    a = html_mod.escape(alt, quote=True)
+    if img.startswith("http://") or img.startswith("https://"):
+        # 480px breakpoint intentionally reuses r_768 (matches captured markup).
+        return (
+            '<picture class="hl-image-picture h-100 w-100" style="display:block;">'
+            '<source media="(max-width:900px) and (min-width: 768px)" srcset="%s">'
+            '<source media="(max-width:768px) and (min-width: 640px)" srcset="%s">'
+            '<source media="(max-width:640px) and (min-width: 480px)" srcset="%s">'
+            '<source media="(max-width:480px) and (min-width: 320px)" srcset="%s">'
+            '<source media="(max-width:320px)" srcset="%s">'
+            '<img src="%s" alt="%s" style="object-fit:cover;" '
+            'class="blog-image-corner blog-standard-image-mobile three-col-img hl-optimized mw-100" '
+            'loading="lazy" fetchpriority="auto" data-animation-class=""></picture>'
+        ) % (_lc_opt(img, 900), _lc_opt(img, 768), _lc_opt(img, 640),
+             _lc_opt(img, 768), _lc_opt(img, 320), _lc_opt(img, 1200), a)
+    return (
+        '<picture class="hl-image-picture h-100 w-100" style="display:block;">'
+        '<img src="%s" alt="%s" style="object-fit:cover;" '
+        'class="blog-image-corner blog-standard-image-mobile three-col-img mw-100" '
+        'loading="lazy" fetchpriority="auto" data-animation-class=""></picture>'
+    ) % (html_mod.escape(img, quote=True), a)
+
+
+def _podcast_card(ep):
+    url = html_mod.escape(ep["url"], quote=True)
+    title_attr = ep["title"]
+    title_text = html_mod.escape(ep["title"], quote=False)
+    pic = _podcast_picture(ep["image"], title_attr)
+    return (
+        '<div class="blog-post-wrapper-list three-col"><div class="blog-post-wrapper-wrapper">'
+        '<div class="blog-box"><a href="%s"><div class="blog-image-standard-wrapper">'
+        '<div class="blog-image-dap blog-image">%s</div></div></a>'
+        '<div class="standard-blog-content">'
+        '<h2 class="blog-title text-xl font-bold text-black font-sans">'
+        '<a class="no-text-decoration" href="%s">%s</a></h2>'
+        '<div class="flex items-center"><div class="text-black text-xs" style="display:flex;"><!----></div>'
+        '<div class="text-black text-xs" style="display:flex;"><!----></div></div><!----><!---->'
+        '<div class="flex"><a href="%s" class="blog-button text-light-blue focus:outline-none '
+        'focus:underline active:text-light-blue font-sans readme-btn">Read more '
+        '<svg xmlns="http://www.w3.org/2000/svg" height="15" width="15" fill="none" '
+        'viewBox="0 0 15 24" stroke-width="2" stroke="#000" aria-hidden="true" '
+        'class="w-5 h-5 readme-btn blog-button-icon"><path stroke-linecap="round" '
+        'stroke-linejoin="round" d="M9 18l6-6-6-6"></path></svg></a></div></div></div></div>'
+        '<!----></div>'
+    ) % (url, pic, url, title_text, url)
+
+
+def _render_grid(eps):
+    cards = "".join(_podcast_card(e) for e in eps[:GRID_PAGE_SIZE])
+    return PODCAST_GRID_BEGIN + cards + PODCAST_GRID_END
+
+
+def _rebuild_static_grid(eps):
+    path = os.path.join(PAGES, "podcast.html")
+    s = open(path, encoding="utf-8").read()
+    block = _render_grid(eps)
+    if PODCAST_GRID_BEGIN in s and PODCAST_GRID_END in s:
+        # idempotent re-run: replace between our own markers
+        s2 = re.sub(re.escape(PODCAST_GRID_BEGIN) + r".*?" + re.escape(PODCAST_GRID_END),
+                    block, s, count=1, flags=re.S)
+    else:
+        # first run: splice between the Vue v-for fragment anchors, keeping the
+        # anchors and the pagination that follows them intact
+        oi = s.find(GRID_OPEN_ANCHOR)
+        ci = s.find(GRID_CLOSE_ANCHOR)
+        if oi < 0 or ci < 0 or ci < oi:
+            raise SystemExit("podcastgrid: could not locate the grid anchors in podcast.html")
+        s2 = s[:oi + len(GRID_OPEN_ANCHOR)] + block + s[ci:]
+    if s2 != s:
+        open(path, "w", encoding="utf-8").write(s2)
+    return s2 != s
+
+
+def _match_bracket(text, open_idx):
+    """Return index just past the ']' matching the '[' at open_idx, string-aware."""
+    depth = 0
+    i = open_idx
+    n = len(text)
+    while i < n:
+        c = text[i]
+        if c == '"':
+            i += 1
+            while i < n and text[i] != '"':
+                if text[i] == '\\':
+                    i += 1
+                i += 1
+        elif c == '[':
+            depth += 1
+        elif c == ']':
+            depth -= 1
+            if depth == 0:
+                return i + 1
+        i += 1
+    raise SystemExit("podcastgrid: unbalanced brackets in ghl-offline-data.js")
+
+
+def _catalog_posts(js):
+    m = re.search(r'var CATS\s*=\s*(\{.*?\});', js, re.S)
+    cats = json.loads(m.group(1))
+    return cats[PODCAST_CAT_ID]["posts"]
+
+
+def _desired_posts(eps, existing):
+    """Rebuild the podcast posts array in JSON order, merge-preserving each
+    existing entry's rich fields (author, categories, imageAltText, publishedAt
+    precision, readTimeInMinutes, type, blogId, _id ...). Only the identity
+    fields that MUST match to avoid a title/link/image desync are enforced from
+    the JSON: title, urlSlug, imageUrl, description, and canonicalLink (only
+    when the entry already carries one)."""
+    by_slug = {p.get("urlSlug"): p for p in existing}
+    out = []
+    for e in eps:
+        cur = by_slug.get(e["slug"])
+        if cur is None:
+            out.append({
+                "_id": "manual-" + e["slug"], "urlSlug": e["slug"], "title": e["title"],
+                "description": e.get("description", ""), "imageUrl": e["image"],
+                "imageAltText": e["title"], "author": {"name": "Freeman Fung"},
+                "categories": [], "tags": [],
+                "publishedAt": e.get("date", "") + "T00:00:00.000Z" if e.get("date") else None,
+                "updatedAt": e.get("date", "") + "T00:00:00.000Z" if e.get("date") else None,
+                "_section": "podcast"})
+        else:
+            merged = dict(cur)
+            merged["title"] = e["title"]
+            merged["urlSlug"] = e["slug"]
+            merged["imageUrl"] = e["image"]
+            merged["description"] = e.get("description", "")
+            if "canonicalLink" in merged:
+                merged["canonicalLink"] = e["url"]
+            out.append(merged)
+    return out
+
+
+def _norm(posts):
+    return json.dumps(posts, sort_keys=True, ensure_ascii=False)
+
+
+def cmd_podcastgrid():
+    eps = _episodes()
+    if not eps:
+        raise SystemExit("podcastgrid: podcast-episodes.json is empty/missing")
+    changed_grid = _rebuild_static_grid(eps)
+
+    js = open(SHIM, encoding="utf-8").read()
+    existing = _catalog_posts(js)
+    desired = _desired_posts(eps, existing)
+    if _norm(existing) == _norm(desired):
+        cat_state = "already in sync (no bytes changed)"
+    else:
+        anchor = '"%s":{"posts":' % PODCAST_CAT_ID
+        ai = js.find(anchor)
+        if ai < 0:
+            raise SystemExit("podcastgrid: podcast category not found in ghl-offline-data.js")
+        arr_start = js.index('[', ai + len(anchor))
+        arr_end = _match_bracket(js, arr_start)
+        new_arr = json.dumps(desired, separators=(",", ":"), ensure_ascii=False)
+        js = js[:arr_start] + new_arr + js[arr_end:]
+        # sanity: only the podcast array changed; the file must still parse
+        _catalog_posts(js)
+        open(SHIM, "w", encoding="utf-8").write(js)
+        cat_state = "REWROTE podcast array (%d posts) from JSON" % len(desired)
+
+    print("podcastgrid: static grid %s (page-1 = %d of %d eps); catalog %s" % (
+        "regenerated" if changed_grid else "unchanged", min(GRID_PAGE_SIZE, len(eps)),
+        len(eps), cat_state))
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "check"
     {"sync": cmd_sync, "enhance": cmd_enhance, "check": cmd_check,
      "sitemap": cmd_sitemap, "seoheads": cmd_seoheads,
-     "jsonld": cmd_jsonld}.get(cmd, lambda: print(__doc__))()
+     "jsonld": cmd_jsonld, "podcastgrid": cmd_podcastgrid}.get(cmd, lambda: print(__doc__))()

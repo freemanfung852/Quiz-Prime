@@ -18,12 +18,33 @@ without Freeman's go-ahead** (live production site).
 ---
 
 ## NOW / NEXT / BLOCKED
-- **NOW:** Waves 0/1/1b/1c/2 SHIPPED + verified. Wave 4 safe part (`.vercelignore`, deploy
-  −260 MB) on branch `seo-wave4-images`, PR — **this closes the safe standalone SEO work.**
-- **NEXT:** the 🔒 FRESH SESSION bundle below (all hydration-sensitive, do together with per-page
-  browser verification): podcast grid rebuild · Wave 3 body content · Bug C header/footer ·
-  runtime image optimisation (all share the Nuxt data payload).
+- **NOW:** Fresh-session bundle IN PROGRESS. **PR 1 — podcast grid rebuild: DONE on branch
+  `fix-podcast-grid-rebuild`**, awaiting Freeman's login-gated preview verification + merge.
+- **NEXT (this session, in order):** Bug C header/footer → Wave 3 body content → runtime image
+  optimisation. Each = own branch/PR, per-page browser verification before merge.
 - **BLOCKED:** nothing standalone remains — everything left is hydration-coupled.
+
+### PR 1 — Podcast grid rebuild ✅ (branch `fix-podcast-grid-rebuild`)
+- **Root-cause refinement (verified in the live clone files):** the "3 places" is really 2 here.
+  `window.__NUXT__` on podcast.html is **config-only (4.1 KB, no card payload)** — nothing to
+  patch. The sole post-hydration authority is the `blogs/posts/list` fetch, served by
+  `ghl-offline-data.js`. PR #7 desynced because it edited only the static grid; the catalog was
+  stale. **The catalog is now already 100% in sync with `podcast-episodes.json`** (same order,
+  Beyonder #1, 0 field diffs on all 22 — the `manual-beyonder` entry from a prior session fixed
+  it). So the ONLY remaining desync was the static page-1 grid (still wonderlab-first, Beyonder
+  absent).
+- **Fix:** new idempotent `publish.py podcastgrid` command. Single source = `podcast-episodes.json`.
+  It regenerates the static page-1 grid (6 cards, newest-first, Beyonder #1) inside
+  `<!--ttt-podcast-grid-->` markers, and OWNS the `ghl-offline-data.js` podcast array — rewriting
+  it from the JSON (merge-preserving rich fields) **only if it drifts**. This run: catalog already
+  in sync → **0 bytes changed in `ghl-offline-data.js`**. Blog + book-review categories untouched.
+- **Scope proof:** only `podcast.html` (grid region only — head/tail byte-identical to `origin/main`)
+  + `tools/publish.py` changed. Quiz, GHL forms, `vercel.json`, catalog: untouched.
+- **Freeze-script fallback:** NOT shipped (documented only). Add a page-scoped post-hydration
+  repaint to `podcast.html` **only if** Freeman's preview shows the grid drifting after hydration.
+- ⏳ **Verify (Freeman, login-gated preview):** per-card checklist handed in chat — confirm each of
+  the 6 page-1 cards shows title == link == image == same episode on the RENDERED DOM after
+  hydration, clicked through, before merge.
 
 ## 🔒 FRESH SESSION — hydration-sensitive work (do NOT touch piecemeal)
 **Why grouped:** all three re-render/replace client-hydrated DOM; each needs per-page browser
