@@ -148,15 +148,21 @@ leaves the old `data-ttt-seo` BlogPosting blocks in place; no grids/shim/body/fo
   `__NUXT_DATA__` content payload + `_preview/*` runtime module + 41 preload hints were dropped, so
   the page is fully static (zero PR#7-style hydration/desync surface). Mobile hamburger was
   runtime-wired, so a ~6-line vanilla `hide-popup`/`submenu-mobile-active` toggle restores it
-  (browser-verified: opens overlay + X closes). **Reuses the live footer newsletter form
-  (`DFQZnEZ3zuA8L487qDE2`) verbatim** via the direct `connect.unwiz.ai/widget/form/…` iframe +
-  `form_embed.js` — same CRM/consent/welcome wiring, no new form. Form appears **once** (hero only);
-  the newsletter column was removed from this page's footer (both mobile+desktop) leaving
-  links/social/copyright/Instagram intact. Form card uses the footer's `#187cb5` blue (the bg this
-  form's white text is designed for). Hero has an empty `.nl-hero__gallery[hidden]` placeholder for
-  a future image drop-in (no rebuild). `/newsletter` rewrite added to `vercel.json` (mirrors
-  `/quiz`), sitemap entry + self-canonical + OG/Twitter meta (indexable, `og:locale en_US`).
-  UTM params pass through (static page, no query parsing; verified no horizontal overflow).
+  (browser-verified: opens overlay + X closes). **Embeds the live "Newsletter" GHL form
+  (`Pqnb4CZblVGr0uxznfWj`) — distinct from the site-wide Footer form (`DFQZnEZ3zuA8L487qDE2`)** —
+  via the direct `connect.unwiz.ai/widget/form/…` iframe + `form_embed.js` (full_name/email/consent/
+  submit). Form appears **once** (hero only); the newsletter column was removed from this page's
+  footer (both mobile+desktop) leaving links/social/copyright/Instagram intact. The Newsletter form
+  is light-designed (white bg, dark labels, its own blue border, gold Submit), so the hero card is
+  **white** with a soft shadow (NOT the footer form's `#187cb5` blue — verified on preview). Hero
+  copy = the general "travel as a gateway to personal evolution" positioning (headline/subcopy/
+  consent), with matching `og:title`/`og:description`/`twitter:*`. Hero has an empty
+  `.nl-hero__gallery[hidden]` placeholder for a future image drop-in (no rebuild). `/newsletter`
+  rewrite in `vercel.json` (mirrors `/quiz`), sitemap entry + self-canonical + OG/Twitter meta
+  (indexable, `og:locale en_US`, title casing "Travel To Transform"). UTM params pass through
+  (static page, no query parsing; verified no horizontal overflow). NB: the form's post-submit
+  thank-you message lives inside the cross-origin `connect.unwiz.ai` iframe and is handled in GHL —
+  not styleable from the page (do not add CSS/JS targeting iframe internals).
   ⏳ **CRM verify (Freeman):** one real submission → lands in GHL, records newsletter consent,
   respects DND/unsubscribe, fires the welcome (Soap Opera) sequence.
 
