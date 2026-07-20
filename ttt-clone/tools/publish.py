@@ -26,7 +26,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAGES = os.path.join(ROOT, "traveltotransform.com")
 SHIM = os.path.join(ROOT, "ghl-offline-data.js")
 LIVE = "https://traveltotransform.com"
-CLONE = "https://site-six-khaki-48.vercel.app"
+# Relative links keep the QA map valid on localhost, previews, and production.
+CLONE = ""
 # While the clone is staging, canonicals point at the live domain so the clone
 # never competes with it in search. On domain cutover set this to the clone's
 # final domain and run `enhance`.
@@ -201,7 +202,7 @@ def clone_map_add(slug, title):
     esc = html_mod.escape(title, quote=False)
     row = f'''        <tr>
           <th scope="row"><span class="pg">{esc}</span><code class="path">/post/{slug}</code></th>
-          <td><a class="lnk lnk--clone" href="{CLONE}/post/{slug}" target="_blank" rel="noopener">Open clone{svg}</a></td>
+          <td><a class="lnk lnk--clone" href="{CLONE}/post/{slug}" target="_blank" rel="noopener">Open page{svg}</a></td>
           <td><a class="lnk lnk--live" href="{LIVE}/post/{slug}" target="_blank" rel="noopener">Live original{svg}</a></td>
           <td class="st"><span class="chip">200</span></td>
         </tr>
