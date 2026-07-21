@@ -133,6 +133,7 @@
     {
       name: "podcast",
       gridSel: ".blog-post-wrapper",
+      hostSel: ".hl-blog-post-home", // stable ancestor to observe for hydration
       detect: function () {
         return !!document.querySelector(".blog-post-wrapper") &&
                !!document.querySelector(".pagination-container");
@@ -151,6 +152,7 @@
     {
       name: "resources",
       gridSel: "#blog-IGYvVKC_zD .blog-row",
+      hostSel: "#blog-IGYvVKC_zD", // stable ancestor to observe for hydration
       detect: function () { return !!document.querySelector("#blog-IGYvVKC_zD .blog-row"); },
       paginated: false,
       pages: function () { return 1; },
@@ -194,24 +196,27 @@
       });
     }
 
-    // Idempotent (re)assert of our owned grid. Safe to call repeatedly: if Vue
-    // adopts/replaces the grid node during hydration and discards our clone, the
-    // next tick re-ejects the fresh node. Returns true once our grid is mounted.
+    // Our cards carry data-slug; GHL's recycled cards never do. This is how we tell
+    // "our render is intact" from "Vue adopted our clone and overwrote its content".
+    function isOurs(g) { return !!(g && g.querySelector("[data-slug]")); }
+
+    // Idempotent (re)assert of our owned grid. Safe to call repeatedly. If the grid
+    // in the DOM is GHL's, or is our node whose content Vue has overwritten, we
+    // (re)eject and refill. Once our content is in place and Vue's vnode is bound to
+    // the now-detached original, it stops touching us and this becomes a no-op.
     function ensure() {
       if (!data().length) return false;
-      var owned = document.querySelector(surface.gridSel + "[data-ttt-grid]");
-      if (owned && owned.firstChild) {
-        state.gridEl = owned;
+      var g = document.querySelector(surface.gridSel);
+      if (!g) return false; // grid not in DOM yet; a later tick will catch it
+      if (g.hasAttribute("data-ttt-grid") && isOurs(g)) {
+        state.gridEl = g;
         state.mounted = true;
         cleanupNonOwned();
         return true;
       }
-      var g = document.querySelector(surface.gridSel + ":not([data-ttt-grid])") ||
-              document.querySelector(surface.gridSel);
-      if (!g) return false; // grid not in DOM yet; a later tick will catch it
       state.gridEl = ejectFilled(g, surface.cards(state.page));
       if (surface.paginated) {
-        if (!state.pagEl || !state.pagEl.isConnected) {
+        if (!state.pagEl || !state.pagEl.isConnected || !state.pagEl.hasAttribute("data-ttt-pag")) {
           var pw = surface.findPagWrap();
           if (pw) { state.pagEl = ejectFilled(pw, ""); fillPag(); }
         }
@@ -253,22 +258,31 @@
     var ctrl = makeController(surface);
     document.addEventListener("click", onClick(ctrl), true); // capture, survives re-render
 
-    // The CSS gate keeps GHL's grid invisible from the first paint, so there is no
-    // flash regardless of when we mount. We (re)assert our owned grid on a short
-    // poll across the hydration window: Vue may adopt/replace the grid node while
-    // hydrating and discard our clone, and ensure() simply re-ejects the fresh node
-    // on the next tick. Once hydration settles our grid sticks. If we never manage
-    // to mount (no data reached us, grid node never appears), drop the gate so GHL's
-    // own grid shows — the section must never be left blank.
+    // Eject AFTER Vue's hydration touches the grid. If we ejected first, Vue would
+    // hydrate against our clone, adopt it and overwrite our cards with its own
+    // (scrambled, Beyonder-dropped) render. By waiting for Vue's first mutation,
+    // Vue binds its vnode to the ORIGINAL node; we then swap that out for our clone,
+    // Vue keeps patching the detached original off-screen, and our render sticks.
+    // The CSS gate keeps GHL's grid hidden the whole time, so the wait shows nothing.
+    var host = document.querySelector(surface.hostSel) || document.body;
+    var mo = new MutationObserver(function () {
+      setTimeout(function () { ctrl.ensure(); }, 50); // let Vue finish this pass first
+    });
+    mo.observe(host, { childList: true, subtree: true });
+
+    // Fallbacks: eject even if no mutation ever fires (SSR already matched Vue, or the
+    // script loaded after hydration); re-assert if Vue later overwrites our content
+    // (ensure() refills when the grid isn't ours); and if we still never mount by the
+    // ceiling, drop the gate so GHL's own grid shows — the section is never left blank.
     var tries = 0;
     var iv = setInterval(function () {
-      ctrl.ensure();
-      if (++tries > 60) { // ~6s window (hydration is long done by then)
+      if (tries >= 7) ctrl.ensure(); // ~700ms: assume hydrated even without a mutation
+      if (++tries > 60) {            // ~6s ceiling
         clearInterval(iv);
+        mo.disconnect();
         if (!ctrl.state.mounted) revealFallback();
       }
     }, 100);
-    ctrl.ensure(); // immediate first attempt
   }
 
   // Fail-open safety net: drop the CSS gate so GHL's own grid becomes visible again.
