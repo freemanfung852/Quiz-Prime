@@ -264,10 +264,16 @@
     // Vue binds its vnode to the ORIGINAL node; we then swap that out for our clone,
     // Vue keeps patching the detached original off-screen, and our render sticks.
     // The CSS gate keeps GHL's grid hidden the whole time, so the wait shows nothing.
+    // Coalesce: GHL's hydration fires hundreds of subtree mutations; queueing an
+    // ensure() per mutation would thrash a big page. Keep at most one pending run.
     var host = document.querySelector(surface.hostSel) || document.body;
-    var mo = new MutationObserver(function () {
-      setTimeout(function () { ctrl.ensure(); }, 50); // let Vue finish this pass first
-    });
+    var pending = false;
+    function schedule() {
+      if (pending) return;
+      pending = true;
+      setTimeout(function () { pending = false; ctrl.ensure(); }, 50); // let Vue finish this pass
+    }
+    var mo = new MutationObserver(schedule);
     mo.observe(host, { childList: true, subtree: true });
 
     // Fallbacks: eject even if no mutation ever fires (SSR already matched Vue, or the
