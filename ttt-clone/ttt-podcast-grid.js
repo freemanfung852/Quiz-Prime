@@ -254,19 +254,31 @@
     };
   }
 
+  // Is our owned render currently live for this surface? An owned grid node that
+  // actually holds our [data-slug] cards. This — not a one-shot "mounted" flag — is
+  // the source of truth: a mount can be undone later when Vue re-renders the whole
+  // widget and replaces our node, so the fail-open must check the live DOM.
+  function ownedLive(surface) {
+    var g = document.querySelector(surface.gridSel + "[data-ttt-grid]");
+    return !!(g && g.querySelector("[data-slug]"));
+  }
+
   function startSurface(surface) {
     var ctrl = makeController(surface);
     document.addEventListener("click", onClick(ctrl), true); // capture, survives re-render
 
-    // Eject AFTER Vue's hydration touches the grid. If we ejected first, Vue would
-    // hydrate against our clone, adopt it and overwrite our cards with its own
-    // (scrambled, Beyonder-dropped) render. By waiting for Vue's first mutation,
-    // Vue binds its vnode to the ORIGINAL node; we then swap that out for our clone,
-    // Vue keeps patching the detached original off-screen, and our render sticks.
-    // The CSS gate keeps GHL's grid hidden the whole time, so the wait shows nothing.
+    // ensure() ejects only when the grid isn't already ours; Vue keeps patching the
+    // detached original off-screen, so re-asserting is safe and idempotent. We must
+    // keep re-asserting because on a heavy page GHL can (a) hydrate the widget LATER
+    // than any fixed timeout and (b) re-render the whole widget after we mount,
+    // replacing our node. The CSS gate hides GHL's grid throughout, so a late mount
+    // costs a brief empty space, never a flash of GHL's wrong cards.
+    var host = document.querySelector(surface.hostSel) || document.body;
+
     // Coalesce: GHL's hydration fires hundreds of subtree mutations; queueing an
     // ensure() per mutation would thrash a big page. Keep at most one pending run.
-    var host = document.querySelector(surface.hostSel) || document.body;
+    // The observer stays connected for the life of the page, so a late/again GHL
+    // render is always caught and re-asserted — the section can't silently go blank.
     var pending = false;
     function schedule() {
       if (pending) return;
@@ -276,19 +288,22 @@
     var mo = new MutationObserver(schedule);
     mo.observe(host, { childList: true, subtree: true });
 
-    // Fallbacks: eject even if no mutation ever fires (SSR already matched Vue, or the
-    // script loaded after hydration); re-assert if Vue later overwrites our content
-    // (ensure() refills when the grid isn't ours); and if we still never mount by the
-    // ceiling, drop the gate so GHL's own grid shows — the section is never left blank.
-    var tries = 0;
+    // Poll for the initial mount (the grid node can hydrate well after load on a
+    // heavy page) across a long window, then fail open: if we STILL don't own the
+    // render, drop the gate so GHL's own grid shows — never leave the section blank.
+    var ms = 0;
     var iv = setInterval(function () {
-      if (tries >= 7) ctrl.ensure(); // ~700ms: assume hydrated even without a mutation
-      if (++tries > 60) {            // ~6s ceiling
+      ctrl.ensure();
+      ms += 250;
+      if (ms >= 20000) {                 // 20s: hydration is certainly done by now
         clearInterval(iv);
-        mo.disconnect();
-        if (!ctrl.state.mounted) revealFallback();
+        if (!ownedLive(surface)) revealFallback();
       }
-    }, 100);
+    }, 250);
+    // No immediate ensure(): ejecting before Vue hydrates lets Vue adopt our clone
+    // and briefly paint its scrambled cards into it. Let the observer fire on Vue's
+    // hydration mutation (eject-after-hydration, no adoption); the interval is the
+    // failsafe for the rare case where the grid never mutates.
   }
 
   // Fail-open safety net: drop the CSS gate so GHL's own grid becomes visible again.
