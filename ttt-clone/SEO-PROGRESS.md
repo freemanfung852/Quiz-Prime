@@ -17,13 +17,103 @@ without Freeman's go-ahead** (live production site).
 
 ---
 
+## ⚠️ WORKTREE NOTICE (2026-07-20)
+This branch is being developed in an **isolated git worktree** at `/Users/freedom/ttt-podcast-wt`
+because a **concurrent session was branch-switching the shared `~/ttt-website` tree** and auto-
+stashed this work mid-flight. Continue in the worktree (`cd /Users/freedom/ttt-podcast-wt`) to
+avoid collisions. `git worktree remove` it once merged.
+
 ## NOW / NEXT / BLOCKED
-- **NOW:** Waves 0/1/1b/1c/2 SHIPPED + verified. Wave 4 safe part (`.vercelignore`, deploy
-  −260 MB) on branch `seo-wave4-images`, PR — **this closes the safe standalone SEO work.**
-- **NEXT:** the 🔒 FRESH SESSION bundle below (all hydration-sensitive, do together with per-page
-  browser verification): podcast grid rebuild · Wave 3 body content · Bug C header/footer ·
-  runtime image optimisation (all share the Nuxt data payload).
-- **BLOCKED:** nothing standalone remains — everything left is hydration-coupled.
+- **NOW:** **PR 1 (branch `fix-podcast-grid-rebuild`, PR #14) — runtime takeover VALIDATED on the
+  Vercel preview ✅.** Both `/podcast` (3-col grid) and `/resources` (compact preview) render our
+  owned grid, Beyonder #1, across repeated hard refreshes; pagination round-trips; the `/resources`
+  sibling Blog widget is untouched; no console errors. Key commits:
+  1. `3a43900` static-grid rebuild (data/SSR fix).
+  2. `2ac66b5` runtime eject-after-hydration (superseded).
+  3. hide-first gate + `/resources` coverage + `active` flag.
+  4. `df7f100` **fixed the blank-grid bug** — the inline data block threw
+     `SyntaxError: Invalid or unexpected token` on the live preview (globals never set → renderer
+     had no data → gate left GHL hidden → blank). Root cause: `_splice_markers` used
+     `re.sub(pattern, block, s)` and Python re-interprets `\n` in the replacement string, turning
+     the JSON payload's escaped newlines (from the 4 descriptions this branch added to the payload)
+     into RAW newlines = invalid JS. Fixed by slicing instead of `re.sub`; the gate is now
+     **fail-open** (reveals GHL's grid if we can't own the render).
+  5. `ed1c7fe` **survive slow/late GHL hydration** — on the heavy `/resources` page GHL can hydrate
+     the widget after any fixed timeout and re-render over our node; the fail-open now checks the
+     live DOM (not a one-shot flag), the MutationObserver stays connected for the page's life, and
+     the mount poll runs 20s. Section can no longer be left blank.
+- **NEXT:** merge PR 1, then Bug C header/footer → Wave 3 body content → runtime image optimisation.
+- **BLOCKED:** nothing — preview validation done. PR title/body still describe only commit 1;
+  update before merge.
+
+### PR 1 — Podcast grid (branch `fix-podcast-grid-rebuild`, PR #14)
+**Commit 1 `3a43900` — static grid rebuild ✅ (the SSR/data half).**
+- Root cause of the *static* desync: `window.__NUXT__` on podcast.html is config-only (4.1 KB, no
+  card payload) — the sole post-hydration authority is the `blogs/posts/list` fetch from
+  `ghl-offline-data.js`, whose catalog is already 100% in sync with `podcast-episodes.json`
+  (Beyonder #1, 0 field diffs on all 22). The only stale surface was the static page-1 grid.
+- New idempotent `publish.py podcastgrid`: single source `podcast-episodes.json`; regenerates the
+  static page-1 grid inside `<!--ttt-podcast-grid-->` markers; owns the `ghl-offline-data.js`
+  podcast array (rewrites only on drift — 0 bytes changed this run). Blog/book-reviews untouched.
+
+**Commit 2 `2ac66b5` — runtime grid takeover (EJECT) — superseded by commit 3.**
+- **The real bug (reproduced live):** GHL's blog-list **Vue component is a compiled third-party
+  CDN chunk we cannot edit**, and its v-for is not stably keyed. On hard refresh it hydrates
+  against our correct SSR grid and **recycles nodes into mismatched title/link/image cards,
+  dropping Beyonder** (rendered catalog[1:7]). It **self-heals on any re-render** (paginate away
+  and back → byte-perfect: Beyonder #1, title==link==image, 0 dup imgs). Classic index-key +
+  stale-lazy recycling — confirmed by live browser inspection, not theory.
+- Commit 2 owned the render page-side but **ejected _after_ hydration** (MutationObserver signal +
+  fallback timer). That landed the correct grid but let GHL paint its wrong grid for ~0.5s first —
+  the flicker commit 3 removes.
+
+**Commit 3 — hide-first/reveal-when-ready gate + Resources coverage + active flag — ⏳ needs Vercel validation.**
+- **Flicker fix (hide-first, reveal-when-ready):** a `<style id="ttt-grid-gate">` injected in
+  `<head>` **before any GHL script** sets `.blog-post-wrapper:not([data-ttt-grid])` (and the
+  `/resources` `.blog-row` equivalent) to `visibility:hidden` from the **first paint**, with a
+  `min-height` reserve on the container so nothing jumps. GHL's grid is therefore never visible.
+  The renderer builds our cards into a shallow clone, marks it `data-ttt-grid`, and swaps it in
+  **already-filled** — only the owned, correct grid is ever shown; GHL's original detaches and
+  stays starved. A ceiling timer drops the gate if our render never mounts (degraded-but-not-blank
+  fallback). No longer depends on eject timing.
+- **`ttt-podcast-grid.js` is now surface-aware (one script, two templates, one source
+  `window.__TTT_PODCAST__`):**
+  - `/podcast` — 3-col `.blog-post-wrapper` grid, paginated (6/page). Unchanged card markup.
+  - `/resources` — the **second instance of the same GHL widget** (`#blog-IGYvVKC_zD`, the compact
+    `.blog-item`/`.blog-row` "More stories" preview, NOT the 3-col grid). It previously loaded
+    **neither** the renderer nor `ghl-offline-data.js` and showed the stale render (Beyonder
+    missing until a podcast slug was opened). Now renders the **6 latest** episodes in the compact
+    template, no pagination, scoped to that widget so the sibling **Blog** widget
+    (`#blog-UiN8mVOG-O`) is untouched; the dead starved load-more is hidden.
+- **`ghl-offline-data.js` — unchanged.** The existing starve (gated on `window.__TTT_OWN_GRID__`,
+  podcast category only) already covers `/resources` once the file is loaded there. `publish.py`
+  now injects that `<script src="/ghl-offline-data.js">` include into `resources.html`.
+- **Single source (`publish.py`):** `_episodes()` filters an optional per-episode `active:false`
+  toggle (default true) — one place to enable/disable an episode across grid, catalog and JSON-LD.
+  One generalized `_wire_runtime()` wires **both** `podcast.html` and `resources.html` with the
+  data block + gate + content-hashed `<script src="/ttt-podcast-grid.js?v=…">`. Order = array
+  order; add/remove = entries. `podcast-episodes.json` shape unchanged (`active` is additive).
+- **What IS validated (local, DOM-level):** generator idempotent; both pages wired with the same
+  renderer hash; catalog in sync (22 eps, 0 bytes changed). Seeded-data render of both surfaces:
+  owned grid visible, **Beyonder #1**, title==link==image as one unit, GHL grid ejected, gate
+  hides the non-owned grid; `/resources` shows exactly 6 compact cards (7th excluded), correct
+  date formatting + real hrefs, Blog widget untouched. `active:false` toggle removes an episode
+  everywhere and reverts cleanly. No console errors; no CSP in project/Vercel config.
+- **Validated on the Vercel preview ✅ (commits `df7f100`/`ed1c7fe`):** `/podcast` renders our grid
+  with Beyonder #1 across 5+ hard refreshes; pagination to page 2 and back stays correct.
+  `/resources` renders the 6-card compact preview (Beyonder #1) across 5+ hard refreshes with the
+  sibling Blog widget untouched. No console errors; the `SyntaxError` that blanked the grid is gone.
+- **Final runtime architecture:** gate hides GHL's grid from the first paint; the renderer waits for
+  Vue's hydration mutation (via a coalesced MutationObserver on the widget host) then ejects — Vue
+  binds its vnode to the detached original and keeps patching it off-screen, so our clone sticks. A
+  content check (`[data-slug]` present) distinguishes our render from GHL's, so a late Vue re-render
+  that overwrites us is re-asserted; the observer stays connected for the page's life and the mount
+  poll runs 20s. If we can never own the render, the gate is dropped (fail-open) so GHL's own grid
+  shows — the section is never left blank.
+- **Local-test caveat (why preview was mandatory):** the in-app browser injects a CSP that blocks
+  **inline** scripts, so the inline `__TTT_OWN_GRID__` data block couldn't run locally and the exact
+  blank/SyntaxError only reproduced on the real preview (via logged-in Chrome). Local seeded-data
+  tests validated renderer logic but could not have caught the payload-escaping bug.
 
 ## 🔒 FRESH SESSION — hydration-sensitive work (do NOT touch piecemeal)
 **Why grouped:** all three re-render/replace client-hydrated DOM; each needs per-page browser

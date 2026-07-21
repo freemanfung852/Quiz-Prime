@@ -557,10 +557,15 @@ def _abs(url):
 
 
 def _episodes():
+    """Single source for both podcast surfaces. An optional per-episode
+    "active": false toggle (default true when absent) hides an episode
+    everywhere — grid, catalog and JSON-LD — from this one place. Order is
+    array order; add/remove is add/remove entries."""
     try:
-        return json.load(open(os.path.join(ROOT, "podcast-episodes.json"), encoding="utf-8"))
+        eps = json.load(open(os.path.join(ROOT, "podcast-episodes.json"), encoding="utf-8"))
     except Exception:
         return []
+    return [e for e in eps if e.get("active", True) is not False]
 
 
 def build_jsonld(relpath):
@@ -635,8 +640,304 @@ def cmd_jsonld():
     print("jsonld: injected data-ttt-schema on %d pages" % n)
 
 
+# ---- Podcast grid rebuild (durable single-source fix) --------------------
+# podcast-episodes.json is the SINGLE source. This command regenerates BOTH
+# consumers from it so the "card exists in 3 places" desync (PR #7/#9) is
+# structurally impossible:
+#   (1) the static /podcast grid (page-1 paint, in podcast.html), and
+#   (2) the podcast category in ghl-offline-data.js (the fetch catalog Nuxt
+#       re-renders from after hydration -- the sole post-hydration authority).
+# window.__NUXT__ on podcast.html is config-only (no card payload), so there is
+# no third place to patch in this clone. The generator OWNS both consumers;
+# array order in the JSON == grid order (newest-first, Beyonder #1). It only
+# rewrites the catalog if it has drifted from the JSON, keeping this file's
+# working hydration payload byte-stable when it is already in sync.
+PODCAST_GRID_BEGIN = "<!--ttt-podcast-grid-->"
+PODCAST_GRID_END = "<!--/ttt-podcast-grid-->"
+# First-run anchors: the Vue v-for fragment that wraps the page-1 cards. Unique
+# in podcast.html. After the first run the BEGIN/END markers are the anchors.
+GRID_OPEN_ANCHOR = '<div class="blog-post-wrapper"><!--[-->'
+GRID_CLOSE_ANCHOR = '<!--]--></div></div><div class="flex items-center justify-center mt-10">'
+PODCAST_CAT_ID = "6878c4aaf07aa601cf0236d1"
+GRID_PAGE_SIZE = 6  # cards painted statically for page 1 (matches the live 6/page UX)
+
+
+def _lc_opt(img, r):
+    return "https://images.leadconnectorhq.com/image/f_webp/q_80/r_%d/u_%s" % (r, img)
+
+
+def _podcast_picture(img, alt):
+    """Card image markup. Remote http(s) images go through the LC optimizer
+    <picture> (source is a public CDN -> works on the login-gated preview too).
+    Local /assets images render as a plain <img> -- the optimizer cannot wrap a
+    relative URL and would 404 on the preview host."""
+    a = html_mod.escape(alt, quote=True)
+    if img.startswith("http://") or img.startswith("https://"):
+        # 480px breakpoint intentionally reuses r_768 (matches captured markup).
+        return (
+            '<picture class="hl-image-picture h-100 w-100" style="display:block;">'
+            '<source media="(max-width:900px) and (min-width: 768px)" srcset="%s">'
+            '<source media="(max-width:768px) and (min-width: 640px)" srcset="%s">'
+            '<source media="(max-width:640px) and (min-width: 480px)" srcset="%s">'
+            '<source media="(max-width:480px) and (min-width: 320px)" srcset="%s">'
+            '<source media="(max-width:320px)" srcset="%s">'
+            '<img src="%s" alt="%s" style="object-fit:cover;" '
+            'class="blog-image-corner blog-standard-image-mobile three-col-img hl-optimized mw-100" '
+            'loading="lazy" fetchpriority="auto" data-animation-class=""></picture>'
+        ) % (_lc_opt(img, 900), _lc_opt(img, 768), _lc_opt(img, 640),
+             _lc_opt(img, 768), _lc_opt(img, 320), _lc_opt(img, 1200), a)
+    return (
+        '<picture class="hl-image-picture h-100 w-100" style="display:block;">'
+        '<img src="%s" alt="%s" style="object-fit:cover;" '
+        'class="blog-image-corner blog-standard-image-mobile three-col-img mw-100" '
+        'loading="lazy" fetchpriority="auto" data-animation-class=""></picture>'
+    ) % (html_mod.escape(img, quote=True), a)
+
+
+def _podcast_card(ep):
+    url = html_mod.escape(ep["url"], quote=True)
+    title_attr = ep["title"]
+    title_text = html_mod.escape(ep["title"], quote=False)
+    pic = _podcast_picture(ep["image"], title_attr)
+    return (
+        '<div class="blog-post-wrapper-list three-col"><div class="blog-post-wrapper-wrapper">'
+        '<div class="blog-box"><a href="%s"><div class="blog-image-standard-wrapper">'
+        '<div class="blog-image-dap blog-image">%s</div></div></a>'
+        '<div class="standard-blog-content">'
+        '<h2 class="blog-title text-xl font-bold text-black font-sans">'
+        '<a class="no-text-decoration" href="%s">%s</a></h2>'
+        '<div class="flex items-center"><div class="text-black text-xs" style="display:flex;"><!----></div>'
+        '<div class="text-black text-xs" style="display:flex;"><!----></div></div><!----><!---->'
+        '<div class="flex"><a href="%s" class="blog-button text-light-blue focus:outline-none '
+        'focus:underline active:text-light-blue font-sans readme-btn">Read more '
+        '<svg xmlns="http://www.w3.org/2000/svg" height="15" width="15" fill="none" '
+        'viewBox="0 0 15 24" stroke-width="2" stroke="#000" aria-hidden="true" '
+        'class="w-5 h-5 readme-btn blog-button-icon"><path stroke-linecap="round" '
+        'stroke-linejoin="round" d="M9 18l6-6-6-6"></path></svg></a></div></div></div></div>'
+        '<!----></div>'
+    ) % (url, pic, url, title_text, url)
+
+
+def _render_grid(eps):
+    cards = "".join(_podcast_card(e) for e in eps[:GRID_PAGE_SIZE])
+    return PODCAST_GRID_BEGIN + cards + PODCAST_GRID_END
+
+
+def _rebuild_static_grid(eps):
+    path = os.path.join(PAGES, "podcast.html")
+    s = open(path, encoding="utf-8").read()
+    block = _render_grid(eps)
+    if PODCAST_GRID_BEGIN in s and PODCAST_GRID_END in s:
+        # idempotent re-run: replace between our own markers. Use a function
+        # replacement so backslashes in `block` are never interpreted as re
+        # escapes (see the note in _splice_markers).
+        s2 = re.sub(re.escape(PODCAST_GRID_BEGIN) + r".*?" + re.escape(PODCAST_GRID_END),
+                    lambda _m: block, s, count=1, flags=re.S)
+    else:
+        # first run: splice between the Vue v-for fragment anchors, keeping the
+        # anchors and the pagination that follows them intact
+        oi = s.find(GRID_OPEN_ANCHOR)
+        ci = s.find(GRID_CLOSE_ANCHOR)
+        if oi < 0 or ci < 0 or ci < oi:
+            raise SystemExit("podcastgrid: could not locate the grid anchors in podcast.html")
+        s2 = s[:oi + len(GRID_OPEN_ANCHOR)] + block + s[ci:]
+    if s2 != s:
+        open(path, "w", encoding="utf-8").write(s2)
+    return s2 != s
+
+
+# Runtime takeover markers (podcast.html only).
+PODCAST_DATA_BEGIN, PODCAST_DATA_END = "<!--ttt-podcast-data-->", "<!--/ttt-podcast-data-->"
+PODCAST_JS_BEGIN, PODCAST_JS_END = "<!--ttt-podcast-grid-js-->", "<!--/ttt-podcast-grid-js-->"
+
+
+def _splice_markers(s, begin, end, block, before, last=True):
+    """Idempotently place `begin+block+end`: replace between markers if present,
+    else insert immediately before `before` (last occurrence if `last`, else first).
+
+    NB: replace by string slicing, NOT re.sub with `block` as the replacement
+    string — re.sub interprets backslash escapes in the replacement, so a JSON
+    payload containing `\\n` (escaped newlines from episode descriptions) would be
+    turned into RAW newlines, producing an invalid JS string literal that aborts
+    the whole inline <script> (globals never set -> grid renders blank)."""
+    if begin in s and end in s:
+        bi = s.find(begin)
+        ei = s.find(end, bi) + len(end)
+        return s[:bi] + begin + block + end + s[ei:]
+    i = s.rfind(before) if last else s.find(before)
+    if i < 0:
+        raise SystemExit("podcastgrid: could not find %r to anchor %s" % (before, begin))
+    return s[:i] + begin + block + end + s[i:]
+
+
+# No-flicker CSS gate (both surfaces). visibility:hidden hides GHL's grid node
+# from the FIRST paint but keeps its box, so the min-height reserve on the
+# container prevents any layout jump. Only our owned clone (which carries
+# data-ttt-grid) stays visible. The dead GHL "load more" on the /resources podcast
+# preview is hidden (its fetch is starved), scoped so the sibling Blog widget keeps
+# its own. Selectors are page-specific; a rule that matches nothing is harmless, so
+# the same gate ships on both pages.
+PODCAST_GATE_CSS = (
+    '<style id="ttt-grid-gate">'
+    '.blog-post-wrapper:not([data-ttt-grid]){visibility:hidden!important}'
+    '.hl-blog-post-home .flex.flex-wrap{min-height:520px}'
+    '#blog-IGYvVKC_zD .blog-row:not([data-ttt-grid]){visibility:hidden!important}'
+    '#blog-IGYvVKC_zD .blog-items-container{min-height:520px}'
+    '#blog-IGYvVKC_zD .more-actions-button-container{display:none}'
+    '</style>'
+)
+
+
+def _ensure_shim_include(s):
+    """Ensure ghl-offline-data.js (the fetch starve/catalog) is loaded on the page,
+    anchored before the Nuxt entry script — same convention as rescrape_listing."""
+    if "ghl-offline-data.js" in s:
+        return s
+    tag = '<script src="/ghl-offline-data.js"></script>'
+    m = re.search(r'<script[^>]*src="https://stcdn\.leadconnectorhq\.com/_preview/[^"]+"', s)
+    if not m:
+        raise SystemExit("podcastgrid: no Nuxt entry script to anchor ghl-offline-data.js")
+    return s[:m.start()] + tag + s[m.start():]
+
+
+def _wire_runtime(page, eps):
+    """Inject the single keyed source + owned renderer + no-flicker gate into a
+    listing page. The inline <head> block sets window.__TTT_OWN_GRID__ BEFORE any
+    GHL script runs (so ghl-offline-data.js starves the podcast fetch) and exposes
+    window.__TTT_PODCAST__ (title/url/image/slug/date/description per episode). The
+    deferred <script> loads the shared renderer, which picks the right surface
+    (3-col grid on /podcast, compact preview on /resources) from the same source."""
+    path = os.path.join(PAGES, page)
+    s = open(path, encoding="utf-8").read()
+    s = _ensure_shim_include(s)
+    src = [{"title": e["title"], "url": e["url"], "image": e["image"], "slug": e["slug"],
+            "date": e.get("date", ""), "description": e.get("description", "")}
+           for e in eps]
+    # </ escaped so the payload can't close the <script>; U+2028/U+2029 escaped
+    # because they are valid in JSON strings but are line terminators in JS, which
+    # would break the inline <script> the same way a raw newline does.
+    payload = (json.dumps(src, separators=(",", ":"), ensure_ascii=False)
+               .replace("</", "<\\/").replace(" ", "\\u2028").replace(" ", "\\u2029"))
+    data_block = ('<script>window.__TTT_OWN_GRID__=true;window.__TTT_PODCAST__=%s;</script>%s'
+                  % (payload, PODCAST_GATE_CSS))
+    # Content-hash the renderer so every deploy busts the browser/CDN cache.
+    import hashlib
+    js_path = os.path.join(ROOT, "ttt-podcast-grid.js")
+    ver = hashlib.sha1(open(js_path, "rb").read()).hexdigest()[:8] if os.path.exists(js_path) else "0"
+    js_block = '<script src="/ttt-podcast-grid.js?v=%s" defer></script>' % ver
+    # Flag + gate must be live before ANY GHL script runs -> anchor before the 1st <script.
+    s = _splice_markers(s, PODCAST_DATA_BEGIN, PODCAST_DATA_END, data_block, "<script", last=False)
+    s = _splice_markers(s, PODCAST_JS_BEGIN, PODCAST_JS_END, js_block, "</body>")
+    changed = s != open(path, encoding="utf-8").read()
+    if changed:
+        open(path, "w", encoding="utf-8").write(s)
+    return changed
+
+
+def _match_bracket(text, open_idx):
+    """Return index just past the ']' matching the '[' at open_idx, string-aware."""
+    depth = 0
+    i = open_idx
+    n = len(text)
+    while i < n:
+        c = text[i]
+        if c == '"':
+            i += 1
+            while i < n and text[i] != '"':
+                if text[i] == '\\':
+                    i += 1
+                i += 1
+        elif c == '[':
+            depth += 1
+        elif c == ']':
+            depth -= 1
+            if depth == 0:
+                return i + 1
+        i += 1
+    raise SystemExit("podcastgrid: unbalanced brackets in ghl-offline-data.js")
+
+
+def _catalog_posts(js):
+    m = re.search(r'var CATS\s*=\s*(\{.*?\});', js, re.S)
+    cats = json.loads(m.group(1))
+    return cats[PODCAST_CAT_ID]["posts"]
+
+
+def _desired_posts(eps, existing):
+    """Rebuild the podcast posts array in JSON order, merge-preserving each
+    existing entry's rich fields (author, categories, imageAltText, publishedAt
+    precision, readTimeInMinutes, type, blogId, _id ...). Only the identity
+    fields that MUST match to avoid a title/link/image desync are enforced from
+    the JSON: title, urlSlug, imageUrl, description, and canonicalLink (only
+    when the entry already carries one)."""
+    by_slug = {p.get("urlSlug"): p for p in existing}
+    out = []
+    for e in eps:
+        cur = by_slug.get(e["slug"])
+        if cur is None:
+            out.append({
+                "_id": "manual-" + e["slug"], "urlSlug": e["slug"], "title": e["title"],
+                "description": e.get("description", ""), "imageUrl": e["image"],
+                "imageAltText": e["title"], "author": {"name": "Freeman Fung"},
+                "categories": [], "tags": [],
+                "publishedAt": e.get("date", "") + "T00:00:00.000Z" if e.get("date") else None,
+                "updatedAt": e.get("date", "") + "T00:00:00.000Z" if e.get("date") else None,
+                "_section": "podcast"})
+        else:
+            merged = dict(cur)
+            merged["title"] = e["title"]
+            merged["urlSlug"] = e["slug"]
+            merged["imageUrl"] = e["image"]
+            merged["description"] = e.get("description", "")
+            if "canonicalLink" in merged:
+                merged["canonicalLink"] = e["url"]
+            out.append(merged)
+    return out
+
+
+def _norm(posts):
+    return json.dumps(posts, sort_keys=True, ensure_ascii=False)
+
+
+def cmd_podcastgrid():
+    eps = _episodes()
+    if not eps:
+        raise SystemExit("podcastgrid: podcast-episodes.json is empty/missing")
+    changed_grid = _rebuild_static_grid(eps)
+    # Runtime takeover on both podcast surfaces, driven by the same source:
+    #   podcast.html   -> 3-col grid (also has the SSR static grid above)
+    #   resources.html -> compact preview (client-rendered only; no static grid)
+    changed_pod = _wire_runtime("podcast.html", eps)
+    changed_res = _wire_runtime("resources.html", eps)
+    changed_runtime = changed_pod or changed_res
+
+    js = open(SHIM, encoding="utf-8").read()
+    existing = _catalog_posts(js)
+    desired = _desired_posts(eps, existing)
+    if _norm(existing) == _norm(desired):
+        cat_state = "already in sync (no bytes changed)"
+    else:
+        anchor = '"%s":{"posts":' % PODCAST_CAT_ID
+        ai = js.find(anchor)
+        if ai < 0:
+            raise SystemExit("podcastgrid: podcast category not found in ghl-offline-data.js")
+        arr_start = js.index('[', ai + len(anchor))
+        arr_end = _match_bracket(js, arr_start)
+        new_arr = json.dumps(desired, separators=(",", ":"), ensure_ascii=False)
+        js = js[:arr_start] + new_arr + js[arr_end:]
+        # sanity: only the podcast array changed; the file must still parse
+        _catalog_posts(js)
+        open(SHIM, "w", encoding="utf-8").write(js)
+        cat_state = "REWROTE podcast array (%d posts) from JSON" % len(desired)
+
+    print("podcastgrid: static grid %s; runtime podcast=%s resources=%s; catalog %s (source: %d eps)" % (
+        "regenerated" if changed_grid else "unchanged",
+        "wired" if changed_pod else "unchanged",
+        "wired" if changed_res else "unchanged", cat_state, len(eps)))
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "check"
     {"sync": cmd_sync, "enhance": cmd_enhance, "check": cmd_check,
      "sitemap": cmd_sitemap, "seoheads": cmd_seoheads,
-     "jsonld": cmd_jsonld}.get(cmd, lambda: print(__doc__))()
+     "jsonld": cmd_jsonld, "podcastgrid": cmd_podcastgrid}.get(cmd, lambda: print(__doc__))()

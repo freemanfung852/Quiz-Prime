@@ -11,6 +11,15 @@
       if (u.pathname.indexOf('/blogs/posts/list') !== -1) {
         var cat = (u.searchParams.get('categories') || '').split(',')[0];
         var entry = CATS[cat];
+        // When ttt-podcast-grid.js owns the /podcast render (its v-for is not
+        // stably keyed, so GHL hydration recycles nodes into mismatched cards),
+        // starve JUST the podcast category so the GHL component never populates
+        // this grid. Our renderer is then the sole writer. Blog/book-reviews and
+        // every other page are unaffected.
+        if (entry && window.__TTT_OWN_GRID__ && cat === '6878c4aaf07aa601cf0236d1') {
+          var empty = {blogPosts: [], count: 0, categoryDetails: entry.categoryDetails, traceId: 'offline-clone-ttt-owned'};
+          return Promise.resolve(new Response(JSON.stringify(empty), {status: 200, headers: {'Content-Type': 'application/json'}}));
+        }
         if (entry) {
           var off = parseInt(u.searchParams.get('offset') || '0', 10) || 0;
           var lim = parseInt(u.searchParams.get('limit') || '6', 10) || 6;
