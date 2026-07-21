@@ -728,9 +728,11 @@ def _rebuild_static_grid(eps):
     s = open(path, encoding="utf-8").read()
     block = _render_grid(eps)
     if PODCAST_GRID_BEGIN in s and PODCAST_GRID_END in s:
-        # idempotent re-run: replace between our own markers
+        # idempotent re-run: replace between our own markers. Use a function
+        # replacement so backslashes in `block` are never interpreted as re
+        # escapes (see the note in _splice_markers).
         s2 = re.sub(re.escape(PODCAST_GRID_BEGIN) + r".*?" + re.escape(PODCAST_GRID_END),
-                    block, s, count=1, flags=re.S)
+                    lambda _m: block, s, count=1, flags=re.S)
     else:
         # first run: splice between the Vue v-for fragment anchors, keeping the
         # anchors and the pagination that follows them intact
@@ -751,10 +753,17 @@ PODCAST_JS_BEGIN, PODCAST_JS_END = "<!--ttt-podcast-grid-js-->", "<!--/ttt-podca
 
 def _splice_markers(s, begin, end, block, before, last=True):
     """Idempotently place `begin+block+end`: replace between markers if present,
-    else insert immediately before `before` (last occurrence if `last`, else first)."""
+    else insert immediately before `before` (last occurrence if `last`, else first).
+
+    NB: replace by string slicing, NOT re.sub with `block` as the replacement
+    string — re.sub interprets backslash escapes in the replacement, so a JSON
+    payload containing `\\n` (escaped newlines from episode descriptions) would be
+    turned into RAW newlines, producing an invalid JS string literal that aborts
+    the whole inline <script> (globals never set -> grid renders blank)."""
     if begin in s and end in s:
-        return re.sub(re.escape(begin) + r".*?" + re.escape(end), begin + block + end,
-                      s, count=1, flags=re.S)
+        bi = s.find(begin)
+        ei = s.find(end, bi) + len(end)
+        return s[:bi] + begin + block + end + s[ei:]
     i = s.rfind(before) if last else s.find(before)
     if i < 0:
         raise SystemExit("podcastgrid: could not find %r to anchor %s" % (before, begin))
@@ -804,7 +813,11 @@ def _wire_runtime(page, eps):
     src = [{"title": e["title"], "url": e["url"], "image": e["image"], "slug": e["slug"],
             "date": e.get("date", ""), "description": e.get("description", "")}
            for e in eps]
-    payload = json.dumps(src, separators=(",", ":"), ensure_ascii=False).replace("</", "<\\/")
+    # </ escaped so the payload can't close the <script>; U+2028/U+2029 escaped
+    # because they are valid in JSON strings but are line terminators in JS, which
+    # would break the inline <script> the same way a raw newline does.
+    payload = (json.dumps(src, separators=(",", ":"), ensure_ascii=False)
+               .replace("</", "<\\/").replace(" ", "\\u2028").replace(" ", "\\u2029"))
     data_block = ('<script>window.__TTT_OWN_GRID__=true;window.__TTT_PODCAST__=%s;</script>%s'
                   % (payload, PODCAST_GATE_CSS))
     # Content-hash the renderer so every deploy busts the browser/CDN cache.

@@ -186,28 +186,42 @@
       fillPag();
     }
 
-    function mount() {
-      if (state.mounted || !data().length) return;
-      var g = document.querySelector(surface.gridSel);
-      if (!g) return; // grid not in DOM yet; a later tick will catch it
-      state.gridEl = ejectFilled(g, surface.cards(state.page));
-
-      if (surface.paginated) {
-        var pw = surface.findPagWrap();
-        if (pw) { state.pagEl = ejectFilled(pw, ""); fillPag(); }
-      }
-      state.mounted = true;
-
-      // Guard: drop any fresh, non-owned grid GHL injects into this surface.
-      var host = state.gridEl.parentNode ? state.gridEl.parentNode.parentNode : document.body;
-      new MutationObserver(function () {
-        document.querySelectorAll(surface.gridSel).forEach(function (el) {
-          if (!el.hasAttribute("data-ttt-grid")) el.remove();
-        });
-      }).observe(host || document.body, { childList: true, subtree: true });
+    function cleanupNonOwned() {
+      // The gate CSS already hides any non-owned grid; also remove it so Vue's
+      // starved (empty) render can't add height. Never touches our owned node.
+      document.querySelectorAll(surface.gridSel).forEach(function (el) {
+        if (!el.hasAttribute("data-ttt-grid")) el.remove();
+      });
     }
 
-    return { state: state, render: render, mount: mount };
+    // Idempotent (re)assert of our owned grid. Safe to call repeatedly: if Vue
+    // adopts/replaces the grid node during hydration and discards our clone, the
+    // next tick re-ejects the fresh node. Returns true once our grid is mounted.
+    function ensure() {
+      if (!data().length) return false;
+      var owned = document.querySelector(surface.gridSel + "[data-ttt-grid]");
+      if (owned && owned.firstChild) {
+        state.gridEl = owned;
+        state.mounted = true;
+        cleanupNonOwned();
+        return true;
+      }
+      var g = document.querySelector(surface.gridSel + ":not([data-ttt-grid])") ||
+              document.querySelector(surface.gridSel);
+      if (!g) return false; // grid not in DOM yet; a later tick will catch it
+      state.gridEl = ejectFilled(g, surface.cards(state.page));
+      if (surface.paginated) {
+        if (!state.pagEl || !state.pagEl.isConnected) {
+          var pw = surface.findPagWrap();
+          if (pw) { state.pagEl = ejectFilled(pw, ""); fillPag(); }
+        }
+      }
+      state.mounted = true;
+      cleanupNonOwned();
+      return true;
+    }
+
+    return { state: state, render: render, ensure: ensure };
   }
 
   function onClick(ctrl) {
@@ -239,30 +253,39 @@
     var ctrl = makeController(surface);
     document.addEventListener("click", onClick(ctrl), true); // capture, survives re-render
 
-    // Mount as soon as the grid node exists (it ships in the SSR). The CSS gate
-    // keeps GHL's grid invisible until our filled, owned clone replaces it, so we
-    // no longer need to wait for hydration to avoid a flash. We still retry in case
-    // the node appears late, and re-mount if a first attempt landed before the node.
+    // The CSS gate keeps GHL's grid invisible from the first paint, so there is no
+    // flash regardless of when we mount. We (re)assert our owned grid on a short
+    // poll across the hydration window: Vue may adopt/replace the grid node while
+    // hydrating and discard our clone, and ensure() simply re-ejects the fresh node
+    // on the next tick. Once hydration settles our grid sticks. If we never manage
+    // to mount (no data reached us, grid node never appears), drop the gate so GHL's
+    // own grid shows — the section must never be left blank.
     var tries = 0;
     var iv = setInterval(function () {
-      if (!ctrl.state.mounted) ctrl.mount();
-      if (ctrl.state.mounted) { clearInterval(iv); return; }
-      if (++tries > 40) { clearInterval(iv); revealFallback(); } // ~4s ceiling
+      ctrl.ensure();
+      if (++tries > 60) { // ~6s window (hydration is long done by then)
+        clearInterval(iv);
+        if (!ctrl.state.mounted) revealFallback();
+      }
     }, 100);
-    ctrl.mount(); // immediate first attempt
+    ctrl.ensure(); // immediate first attempt
   }
 
-  // Safety net: if our render never mounts (script error, grid node never appears),
-  // drop the CSS gate so GHL's own SSR grid becomes visible again — a degraded but
-  // non-blank fallback (on /podcast the SSR grid is already correct).
+  // Fail-open safety net: drop the CSS gate so GHL's own grid becomes visible again.
+  // Called whenever we cannot own the render (no data, script error, grid never
+  // appears) so a starved-but-hidden GHL grid can never leave the section blank.
   function revealFallback() {
     var g = document.getElementById("ttt-grid-gate");
     if (g && g.parentNode) g.parentNode.removeChild(g);
   }
 
   function start() {
-    if (!data().length) return; // nothing to own; leave GHL alone
-    SURFACES.forEach(function (s) { if (s.detect()) startSurface(s); });
+    // No data reached us (e.g. the inline source block failed to parse): do NOT
+    // leave GHL's grid gated/hidden — reveal it so the section still shows cards.
+    if (!data().length) { revealFallback(); return; }
+    var matched = false;
+    SURFACES.forEach(function (s) { if (s.detect()) { matched = true; startSurface(s); } });
+    if (!matched) revealFallback(); // unknown surface — never hide GHL's grid
   }
 
   if (document.readyState === "loading") {
