@@ -557,10 +557,15 @@ def _abs(url):
 
 
 def _episodes():
+    """Single source for both podcast surfaces. An optional per-episode
+    "active": false toggle (default true when absent) hides an episode
+    everywhere — grid, catalog and JSON-LD — from this one place. Order is
+    array order; add/remove is add/remove entries."""
     try:
-        return json.load(open(os.path.join(ROOT, "podcast-episodes.json"), encoding="utf-8"))
+        eps = json.load(open(os.path.join(ROOT, "podcast-episodes.json"), encoding="utf-8"))
     except Exception:
         return []
+    return [e for e in eps if e.get("active", True) is not False]
 
 
 def build_jsonld(relpath):
@@ -756,25 +761,58 @@ def _splice_markers(s, begin, end, block, before, last=True):
     return s[:i] + begin + block + end + s[i:]
 
 
-def _wire_podcast_runtime(eps):
-    """Inject the single keyed source + the owned renderer into podcast.html.
-    The inline <head> block sets window.__TTT_OWN_GRID__ BEFORE any GHL script
-    runs (so ghl-offline-data.js starves the podcast fetch) and exposes
-    window.__TTT_PODCAST__ (title/url/image/slug per episode). The deferred
-    <script> loads the renderer. Page-scoped to podcast.html only."""
-    path = os.path.join(PAGES, "podcast.html")
+# No-flicker CSS gate (both surfaces). visibility:hidden hides GHL's grid node
+# from the FIRST paint but keeps its box, so the min-height reserve on the
+# container prevents any layout jump. Only our owned clone (which carries
+# data-ttt-grid) stays visible. The dead GHL "load more" on the /resources podcast
+# preview is hidden (its fetch is starved), scoped so the sibling Blog widget keeps
+# its own. Selectors are page-specific; a rule that matches nothing is harmless, so
+# the same gate ships on both pages.
+PODCAST_GATE_CSS = (
+    '<style id="ttt-grid-gate">'
+    '.blog-post-wrapper:not([data-ttt-grid]){visibility:hidden!important}'
+    '.hl-blog-post-home .flex.flex-wrap{min-height:520px}'
+    '#blog-IGYvVKC_zD .blog-row:not([data-ttt-grid]){visibility:hidden!important}'
+    '#blog-IGYvVKC_zD .blog-items-container{min-height:520px}'
+    '#blog-IGYvVKC_zD .more-actions-button-container{display:none}'
+    '</style>'
+)
+
+
+def _ensure_shim_include(s):
+    """Ensure ghl-offline-data.js (the fetch starve/catalog) is loaded on the page,
+    anchored before the Nuxt entry script — same convention as rescrape_listing."""
+    if "ghl-offline-data.js" in s:
+        return s
+    tag = '<script src="/ghl-offline-data.js"></script>'
+    m = re.search(r'<script[^>]*src="https://stcdn\.leadconnectorhq\.com/_preview/[^"]+"', s)
+    if not m:
+        raise SystemExit("podcastgrid: no Nuxt entry script to anchor ghl-offline-data.js")
+    return s[:m.start()] + tag + s[m.start():]
+
+
+def _wire_runtime(page, eps):
+    """Inject the single keyed source + owned renderer + no-flicker gate into a
+    listing page. The inline <head> block sets window.__TTT_OWN_GRID__ BEFORE any
+    GHL script runs (so ghl-offline-data.js starves the podcast fetch) and exposes
+    window.__TTT_PODCAST__ (title/url/image/slug/date/description per episode). The
+    deferred <script> loads the shared renderer, which picks the right surface
+    (3-col grid on /podcast, compact preview on /resources) from the same source."""
+    path = os.path.join(PAGES, page)
     s = open(path, encoding="utf-8").read()
-    src = [{"title": e["title"], "url": e["url"], "image": e["image"], "slug": e["slug"]}
+    s = _ensure_shim_include(s)
+    src = [{"title": e["title"], "url": e["url"], "image": e["image"], "slug": e["slug"],
+            "date": e.get("date", ""), "description": e.get("description", "")}
            for e in eps]
     payload = json.dumps(src, separators=(",", ":"), ensure_ascii=False).replace("</", "<\\/")
-    data_block = ('<script>window.__TTT_OWN_GRID__=true;window.__TTT_PODCAST__=%s;</script>'
-                  % payload)
+    data_block = ('<script>window.__TTT_OWN_GRID__=true;window.__TTT_PODCAST__=%s;</script>%s'
+                  % (payload, PODCAST_GATE_CSS))
     # Content-hash the renderer so every deploy busts the browser/CDN cache.
     import hashlib
     js_path = os.path.join(ROOT, "ttt-podcast-grid.js")
     ver = hashlib.sha1(open(js_path, "rb").read()).hexdigest()[:8] if os.path.exists(js_path) else "0"
     js_block = '<script src="/ttt-podcast-grid.js?v=%s" defer></script>' % ver
-    # Flag must be live before ANY GHL script runs -> anchor before the 1st <script.
+    # Flag + gate must be live before ANY GHL script runs -> anchor before the 1st <script.
     s = _splice_markers(s, PODCAST_DATA_BEGIN, PODCAST_DATA_END, data_block, "<script", last=False)
     s = _splice_markers(s, PODCAST_JS_BEGIN, PODCAST_JS_END, js_block, "</body>")
     changed = s != open(path, encoding="utf-8").read()
@@ -853,7 +891,12 @@ def cmd_podcastgrid():
     if not eps:
         raise SystemExit("podcastgrid: podcast-episodes.json is empty/missing")
     changed_grid = _rebuild_static_grid(eps)
-    changed_runtime = _wire_podcast_runtime(eps)
+    # Runtime takeover on both podcast surfaces, driven by the same source:
+    #   podcast.html   -> 3-col grid (also has the SSR static grid above)
+    #   resources.html -> compact preview (client-rendered only; no static grid)
+    changed_pod = _wire_runtime("podcast.html", eps)
+    changed_res = _wire_runtime("resources.html", eps)
+    changed_runtime = changed_pod or changed_res
 
     js = open(SHIM, encoding="utf-8").read()
     existing = _catalog_posts(js)
@@ -874,9 +917,10 @@ def cmd_podcastgrid():
         open(SHIM, "w", encoding="utf-8").write(js)
         cat_state = "REWROTE podcast array (%d posts) from JSON" % len(desired)
 
-    print("podcastgrid: static grid %s; runtime %s; catalog %s (source: %d eps)" % (
+    print("podcastgrid: static grid %s; runtime podcast=%s resources=%s; catalog %s (source: %d eps)" % (
         "regenerated" if changed_grid else "unchanged",
-        "wired" if changed_runtime else "unchanged", cat_state, len(eps)))
+        "wired" if changed_pod else "unchanged",
+        "wired" if changed_res else "unchanged", cat_state, len(eps)))
 
 
 if __name__ == "__main__":

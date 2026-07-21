@@ -1,28 +1,37 @@
 /* TTT podcast grid — locally-owned client renderer (single keyed source).
  *
  * WHY THIS EXISTS
- * The /podcast grid is rendered by GHL's blog-list Vue component, compiled into
- * a third-party CDN chunk we cannot edit. Its v-for is NOT keyed by a stable id,
- * so on a hard load it hydrates against our correct SSR grid and recycles nodes:
- * title, href and <img> each go stale independently (duplicate/mismatched images,
- * Beyonder dropped). It self-heals on any later re-render (proven: paginating away
- * and back renders byte-perfect). Since we can't fix their :key, we OWN the render.
+ * The podcast grid is rendered by GHL's blog-list Vue component, compiled into a
+ * third-party CDN chunk we cannot edit. Its v-for is NOT keyed by a stable id, so
+ * on a hard load it hydrates against our SSR grid and recycles nodes: title, href
+ * and <img> each go stale independently (duplicate/mismatched images, Beyonder
+ * dropped). It self-heals on any later re-render (paginating away and back renders
+ * byte-perfect). Since we can't fix their :key, we OWN the render.
  *
- * HOW
- * - Single source: window.__TTT_PODCAST__ (emitted by publish.py from
- *   podcast-episodes.json — the same array that seeds the static SSR grid).
- * - window.__TTT_OWN_GRID__ (set inline in <head> BEFORE any GHL script) makes
- *   ghl-offline-data.js serve an EMPTY podcast list, so the GHL component never
- *   populates/reshuffles this grid. This renderer is then the sole writer.
- * - Each card binds title == link == image from ONE post object, keyed by slug
- *   (data-slug). Images use a native loading="lazy" <img src> (no data-src / no
- *   IntersectionObserver), so there are no stale observers to recycle.
- * - A MutationObserver re-asserts the grid if anything else touches it.
- * Page-scoped: only loaded on podcast.html. Does not touch the quiz or forms.
+ * TWO SURFACES, ONE SOURCE
+ * The same GHL blog widget appears in two layouts, both driven from the single
+ * source window.__TTT_PODCAST__ (emitted by publish.py from podcast-episodes.json):
+ *   - /podcast   : 3-col ".blog-post-wrapper" grid, paginated (6/page).
+ *   - /resources : compact ".blog-item" preview inside #blog-IGYvVKC_zD, first N,
+ *                  no pagination (the sibling Blog widget is never touched).
+ *
+ * NO-FLICKER GATE (hide-first, reveal-when-ready)
+ * window.__TTT_OWN_GRID__ (set inline in <head> BEFORE any GHL script) makes
+ * ghl-offline-data.js serve an EMPTY podcast list, so the GHL component never
+ * populates this grid. A CSS gate injected in <head> (publish.py) hides the GHL
+ * grid node from the very first paint — `.blog-post-wrapper:not([data-ttt-grid])`
+ * / `#blog-IGYvVKC_zD .blog-row:not([data-ttt-grid])` are visibility:hidden, with
+ * a min-height reserve on the container so nothing jumps. We then EJECT GHL's grid
+ * (clone it shallow, fill the clone with our cards, mark it data-ttt-grid, and swap
+ * it in) — GHL's Vue keeps patching the detached original off-screen and can never
+ * overwrite us, and only our filled clone (which carries data-ttt-grid) is visible.
+ * A guard MutationObserver drops any fresh non-owned grid GHL later injects.
+ * Page-scoped: loaded only on podcast.html and resources.html. Never touches quiz/forms.
  */
 (function () {
   "use strict";
-  var PAGE_SIZE = 6;
+  var PAGE_SIZE = 6;   // /podcast cards per page
+  var PREVIEW_N = 6;   // /resources preview count
   var LC = "https://images.leadconnectorhq.com/image/f_webp/q_80/r_";
 
   function data() { return (window.__TTT_PODCAST__ || []).slice(); }
@@ -31,8 +40,15 @@
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
   }
-  function pages() { return Math.max(1, Math.ceil(data().length / PAGE_SIZE)); }
+  function fmtDate(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
+    if (!m) return "";
+    var MO = ["January", "February", "March", "April", "May", "June", "July",
+      "August", "September", "October", "November", "December"];
+    return MO[(+m[2]) - 1] + " " + (+m[3]) + ", " + m[1];
+  }
 
+  // ---- /podcast 3-col template ---------------------------------------------
   function picture(img, alt) {
     var a = esc(alt);
     if (/^https?:\/\//.test(img)) {
@@ -57,7 +73,7 @@
     );
   }
 
-  function card(ep) {
+  function gridCard(ep) {
     var url = esc(ep.url), title = esc(ep.title);
     return (
       '<div class="blog-post-wrapper-list three-col"><div class="blog-post-wrapper-wrapper" data-slug="' + esc(ep.slug) + '">' +
@@ -77,6 +93,25 @@
     );
   }
 
+  // ---- /resources compact template -----------------------------------------
+  // Matches GHL's captured .blog-item markup, but with REAL hrefs (GHL relies on a
+  // role="button" click handler we don't reproduce) and no read-time (not in JSON).
+  function compactCard(ep) {
+    var url = esc(ep.url), title = esc(ep.title), img = esc(ep.image);
+    var date = esc(fmtDate(ep.date)), desc = esc(ep.description || "");
+    return (
+      '<div class="blog-item blog-column" role="button" tabindex="0" data-slug="' + esc(ep.slug) +
+        '" data-ttt-href="' + url + '"><div class="blog-column-container">' +
+        '<div><img src="' + img + '" alt="' + title + '" loading="lazy"></div>' +
+        '<div class="blog-item-box-2"><div class="blog-item-texts">' +
+          '<h2 class="blog-item-heading"><strong><a href="' + url + '" aria-label="' + title + '">' + title + '</a></strong></h2>' +
+          '<p class="blog-item-description">' + desc + ' <a aria-label="...more" class="compact-more-button" href="' + url + '">...more</a></p>' +
+          '<p class="blog-item-category"><!--[--><span>podcast </span><!--]--></p>' +
+          (date ? '<p class="blog-item-subtexts"><span class="blog-item-date">' + date + '</span></p>' : '') +
+        '</div><!----></div></div></div>'
+    );
+  }
+
   function paginationHTML(page, total) {
     var out = '<div class="pagination-container">';
     out += '<button ' + (page <= 1 ? "disabled " : "") +
@@ -90,103 +125,144 @@
     return out + "</div>";
   }
 
-  // ---- EJECT strategy -------------------------------------------------------
-  // Sharing the grid with GHL is a losing race: it re-renders 6 cards of its own
-  // (scrambled, Beyonder dropped) and any count/attr guard misses it. Instead we
-  // clone the grid + pagination nodes and swap the clones into the DOM. GHL's Vue
-  // still holds refs to the ORIGINAL (now-detached) nodes and keeps patching them
-  // off-screen; our clones are framework-free and can never be overwritten.
-  var state = { page: 1, gridEl: null, pagEl: null, mounted: false };
+  // ---- surfaces ------------------------------------------------------------
+  // Each page matches exactly one surface. gridSel finds GHL's grid node; we clone
+  // it shallow so our owned grid keeps the exact class/position and GHL's original
+  // detaches. `cards(page)` builds the innerHTML for our owned grid.
+  var SURFACES = [
+    {
+      name: "podcast",
+      gridSel: ".blog-post-wrapper",
+      detect: function () {
+        return !!document.querySelector(".blog-post-wrapper") &&
+               !!document.querySelector(".pagination-container");
+      },
+      paginated: true,
+      pages: function () { return Math.max(1, Math.ceil(data().length / PAGE_SIZE)); },
+      cards: function (page) {
+        var eps = data(), start = (page - 1) * PAGE_SIZE;
+        return eps.slice(start, start + PAGE_SIZE).map(gridCard).join("");
+      },
+      findPagWrap: function () {
+        var pc = document.querySelector(".pagination-container");
+        return pc ? pc.parentElement : null;
+      }
+    },
+    {
+      name: "resources",
+      gridSel: "#blog-IGYvVKC_zD .blog-row",
+      detect: function () { return !!document.querySelector("#blog-IGYvVKC_zD .blog-row"); },
+      paginated: false,
+      pages: function () { return 1; },
+      cards: function () { return data().slice(0, PREVIEW_N).map(compactCard).join(""); },
+      findPagWrap: function () { return null; }
+    }
+  ];
 
-  function findGrid() { return state.gridEl && state.gridEl.isConnected ? state.gridEl
-    : document.querySelector(".blog-post-wrapper"); }
-  function findPagWrap() {
-    if (state.pagEl && state.pagEl.isConnected) return state.pagEl;
-    var pc = document.querySelector(".pagination-container");
-    return pc ? pc.parentElement : null;
-  }
-
-  function fillGrid(el, page) {
-    var eps = data();
-    var start = (page - 1) * PAGE_SIZE;
-    el.innerHTML = eps.slice(start, start + PAGE_SIZE).map(card).join("");
-    el.setAttribute("data-ttt-grid", "1");
-  }
-  function fillPag(el, page) {
-    el.innerHTML = paginationHTML(page, pages());
-    el.setAttribute("data-ttt-pag", "1");
-  }
-
-  function render(page) {
-    page = Math.min(Math.max(1, page || 1), pages());
-    state.page = page;
-    if (state.gridEl) fillGrid(state.gridEl, page);
-    if (state.pagEl) fillPag(state.pagEl, page);
-  }
-
-  // Detach a live node from Vue by replacing it in the DOM with a deep clone.
-  // cloneNode(true) drops Vue's addEventListener bindings, so the clone is inert.
-  function eject(node) {
-    var clone = node.cloneNode(false); // shallow: keep tag/classes/attrs only
-    // preserve identifying classes/attrs already on the shallow clone
+  // Detach a live node from Vue by swapping in a shallow clone (keeps tag/class/
+  // attrs, drops Vue's addEventListener bindings). Fill BEFORE the swap so the
+  // clone lands already-populated and marked owned — never a visible empty frame.
+  function ejectFilled(node, html) {
+    var clone = node.cloneNode(false);
+    clone.setAttribute("data-ttt-grid", "1");
+    clone.innerHTML = html;
     node.parentNode.replaceChild(clone, node);
     return clone;
   }
 
-  function mount() {
-    if (state.mounted || !data().length) return;
-    var g = document.querySelector(".blog-post-wrapper");
-    if (!g) return; // grid not in DOM yet; a later tick will catch it
-    var pc = document.querySelector(".pagination-container");
-    var pw = pc ? pc.parentElement : null;
+  function makeController(surface) {
+    var state = { page: 1, gridEl: null, pagEl: null, mounted: false };
 
-    state.gridEl = eject(g);
-    fillGrid(state.gridEl, state.page);
-    if (pw) { state.pagEl = eject(pw); fillPag(state.pagEl, state.page); }
-    state.mounted = true;
+    function fillPag() {
+      if (!state.pagEl) return;
+      state.pagEl.innerHTML = paginationHTML(state.page, surface.pages());
+      state.pagEl.setAttribute("data-ttt-pag", "1");
+    }
 
-    // Guard: if GHL injects a fresh, non-owned .blog-post-wrapper anywhere, drop it.
-    var host = state.gridEl.parentNode ? state.gridEl.parentNode.parentNode : document.body;
-    new MutationObserver(function () {
-      document.querySelectorAll(".blog-post-wrapper").forEach(function (el) {
-        if (!el.hasAttribute("data-ttt-grid")) el.remove();
-      });
-    }).observe(host || document.body, { childList: true, subtree: true });
+    function render(page) {
+      page = Math.min(Math.max(1, page || 1), surface.pages());
+      state.page = page;
+      if (state.gridEl) state.gridEl.innerHTML = surface.cards(page);
+      fillPag();
+    }
+
+    function mount() {
+      if (state.mounted || !data().length) return;
+      var g = document.querySelector(surface.gridSel);
+      if (!g) return; // grid not in DOM yet; a later tick will catch it
+      state.gridEl = ejectFilled(g, surface.cards(state.page));
+
+      if (surface.paginated) {
+        var pw = surface.findPagWrap();
+        if (pw) { state.pagEl = ejectFilled(pw, ""); fillPag(); }
+      }
+      state.mounted = true;
+
+      // Guard: drop any fresh, non-owned grid GHL injects into this surface.
+      var host = state.gridEl.parentNode ? state.gridEl.parentNode.parentNode : document.body;
+      new MutationObserver(function () {
+        document.querySelectorAll(surface.gridSel).forEach(function (el) {
+          if (!el.hasAttribute("data-ttt-grid")) el.remove();
+        });
+      }).observe(host || document.body, { childList: true, subtree: true });
+    }
+
+    return { state: state, render: render, mount: mount };
   }
 
-  function onClick(e) {
-    var b = e.target && e.target.closest ? e.target.closest(".pagination-button[data-ttt-page]") : null;
-    if (!b || b.disabled) return;
-    e.preventDefault();
-    e.stopPropagation();
-    var p = parseInt(b.getAttribute("data-ttt-page"), 10);
-    if (p >= 1 && p <= pages()) {
-      render(p);
-      if (state.gridEl && state.gridEl.scrollIntoView)
-        state.gridEl.scrollIntoView({ block: "start", behavior: "auto" });
-    }
+  function onClick(ctrl) {
+    return function (e) {
+      var t = e.target;
+      // pagination (podcast surface)
+      var b = t && t.closest ? t.closest(".pagination-button[data-ttt-page]") : null;
+      if (b && !b.disabled) {
+        e.preventDefault();
+        e.stopPropagation();
+        var p = parseInt(b.getAttribute("data-ttt-page"), 10);
+        if (!isNaN(p) && p >= 1) {
+          ctrl.render(p);
+          if (ctrl.state.gridEl && ctrl.state.gridEl.scrollIntoView)
+            ctrl.state.gridEl.scrollIntoView({ block: "start", behavior: "auto" });
+        }
+        return;
+      }
+      // whole-card navigation (resources compact card is a role="button")
+      var card = t && t.closest ? t.closest(".blog-item[data-ttt-href]") : null;
+      if (card && !(t.closest && t.closest("a"))) {
+        e.preventDefault();
+        location.href = card.getAttribute("data-ttt-href");
+      }
+    };
+  }
+
+  function startSurface(surface) {
+    var ctrl = makeController(surface);
+    document.addEventListener("click", onClick(ctrl), true); // capture, survives re-render
+
+    // Mount as soon as the grid node exists (it ships in the SSR). The CSS gate
+    // keeps GHL's grid invisible until our filled, owned clone replaces it, so we
+    // no longer need to wait for hydration to avoid a flash. We still retry in case
+    // the node appears late, and re-mount if a first attempt landed before the node.
+    var tries = 0;
+    var iv = setInterval(function () {
+      if (!ctrl.state.mounted) ctrl.mount();
+      if (ctrl.state.mounted) { clearInterval(iv); return; }
+      if (++tries > 40) { clearInterval(iv); revealFallback(); } // ~4s ceiling
+    }, 100);
+    ctrl.mount(); // immediate first attempt
+  }
+
+  // Safety net: if our render never mounts (script error, grid node never appears),
+  // drop the CSS gate so GHL's own SSR grid becomes visible again — a degraded but
+  // non-blank fallback (on /podcast the SSR grid is already correct).
+  function revealFallback() {
+    var g = document.getElementById("ttt-grid-gate");
+    if (g && g.parentNode) g.parentNode.removeChild(g);
   }
 
   function start() {
     if (!data().length) return; // nothing to own; leave GHL alone
-    document.addEventListener("click", onClick, true); // capture phase, survives re-render
-
-    // The eject MUST run AFTER Vue hydration, else Vue adopts our clone. Vue's
-    // hydration/first render mutates the grid -> that's the signal to eject on the
-    // next tick. Fallbacks cover a grid Vue never touches or that appears late.
-    var g0 = document.querySelector(".blog-post-wrapper");
-    if (g0) {
-      var mo = new MutationObserver(function () {
-        mo.disconnect();
-        setTimeout(mount, 30); // let Vue finish its current render pass first
-      });
-      mo.observe(g0, { childList: true, subtree: true });
-    }
-    var tries = 0;
-    var iv = setInterval(function () {
-      if (!state.mounted && tries >= 6) mount(); // ~900ms in: assume hydrated
-      if (state.mounted || ++tries > 40) clearInterval(iv); // ~6s ceiling
-    }, 150);
+    SURFACES.forEach(function (s) { if (s.detect()) startSurface(s); });
   }
 
   if (document.readyState === "loading") {
