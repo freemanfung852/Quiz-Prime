@@ -66,7 +66,7 @@ CATS = {  # categoryId: (label, blogId, listing page)
 MANUAL_POSTS = {
     "6878c4aaf07aa601cf0236d1": [{
         "_id": "manual-beyonder", "urlSlug": "beyonder-the-podcast-with-veerle-beelen",
-        "title": "Beyonder The Podcast with Veerle Beelen",
+        "title": "From Tourist to Global Citizen | Beyonder The Podcast with Veerle Beelen",
         "description": "Tourist or Global Citizen? Freeman Fung on Beyonder The Podcast with Veerle Beelen.",
         "imageUrl": "/assets/podcast/beyonder-the-podcast-freeman-fung-veerle-beelen-tourist-or-global-citizen.png",
         "imageAltText": "Beyonder The Podcast with Veerle Beelen",
@@ -784,6 +784,10 @@ PODCAST_GATE_CSS = (
     '#blog-IGYvVKC_zD .blog-row:not([data-ttt-grid]){visibility:hidden!important}'
     '#blog-IGYvVKC_zD .blog-items-container{min-height:520px}'
     '#blog-IGYvVKC_zD .more-actions-button-container{display:none}'
+    # GHL styles the /resources "More Podcasts >>" pill with margin:-75px, tuned
+    # to overlap whitespace of the ORIGINAL widget; our compact preview fills that
+    # space, so the pill landed on the bottom-middle card. Give it a normal gap.
+    '.button-1w3s0-nv4y{margin:24px 0 0!important}'
     '</style>'
 )
 
