@@ -784,6 +784,10 @@ PODCAST_GATE_CSS = (
     '#blog-IGYvVKC_zD .blog-row:not([data-ttt-grid]){visibility:hidden!important}'
     '#blog-IGYvVKC_zD .blog-items-container{min-height:520px}'
     '#blog-IGYvVKC_zD .more-actions-button-container{display:none}'
+    # GHL styles the /resources "More Podcasts >>" pill with margin:-75px, tuned
+    # to overlap whitespace of the ORIGINAL widget; our compact preview fills that
+    # space, so the pill landed on the bottom-middle card. Give it a normal gap.
+    '.button-1w3s0-nv4y{margin:24px 0 0!important}'
     '</style>'
 )
 
