@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Travel Toolkit — Travel Wellbeing &amp; Resources | Travel to Transform</title>
+<meta name="description" content="The tools, tech and rituals Freeman Fung genuinely uses to travel further, feel better and stay in his highest state anywhere in the world. A curated wellbeing &amp; biohacking toolkit for travellers.">
+<meta name="title" content="My Travel Toolkit — Travel Wellbeing &amp; Resources | Travel to Transform">
+<link rel="canonical" href="https://traveltotransform.com/resources/toolkit">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://traveltotransform.com/resources/toolkit">
+<meta property="og:title" content="My Travel Toolkit — Travel Wellbeing &amp; Resources">
+<meta property="og:description" content="The tools, tech and rituals I genuinely use to travel further, feel better and stay in my highest state anywhere in the world. Where you see a code, consider it my gift to you.">
+<meta property="og:site_name" content="Travel to Transform">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#2d2d2a; --ink-soft:#6b6a63; --gold:#f1c00e; --gold-deep:#c99a06;
+    --blue:#187cb5; --blue-deep:#0f5c88;
+    --cream:#f7f3ec; --card:#ffffff; --line:#e7e0d3; --tint:#efe8d9;
+    --shadow:0 10px 34px rgba(45,45,42,.08); --shadow-sm:0 3px 12px rgba(45,45,42,.06);
+    --wrap:1160px; --r:20px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:'Poppins',system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--cream);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  a{color:var(--blue);}
+  img{max-width:100%;display:block;}
+  .wrap{max-width:var(--wrap);margin:0 auto;padding:0 22px;}
+
+  /* ---------- header ---------- */
+  .site-header{background:#fff;border-bottom:1px solid var(--line);}
+  .site-header .wrap{display:flex;align-items:center;justify-content:space-between;gap:18px;height:74px;}
+  .site-header .logo img{height:46px;width:auto;}
+  .site-nav{display:flex;gap:22px;flex-wrap:wrap;align-items:center;}
+  .site-nav a{color:var(--ink);text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;}
+  .site-nav a:hover{color:var(--gold-deep);}
+  .site-nav a.active{color:var(--gold-deep);border-bottom:2px solid var(--gold);padding-bottom:2px;}
+  .nav-dd{position:relative;display:flex;align-items:center;height:74px;}
+  .nav-dd-menu{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:-14px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:8px 0;display:none;min-width:200px;z-index:60;}
+  .nav-dd:hover .nav-dd-menu{display:block;}
+  .nav-dd-menu a{display:block;padding:9px 18px;border-bottom:none;}
+  .nav-dd-menu a:hover{background:var(--cream);}
+  @media(max-width:860px){.site-nav{display:none;}}
+
+  /* ---------- hero ---------- */
+  .hero{padding:52px 0 22px;}
+  .crumb{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);font-weight:600;margin-bottom:18px;}
+  .crumb a{color:var(--ink-soft);text-decoration:none;}
+  .crumb b{color:var(--gold-deep);}
+  .hero h1{font-size:clamp(2rem,4.6vw,3.2rem);line-height:1.1;letter-spacing:-.015em;margin:0 0 8px;font-weight:700;max-width:16ch;text-wrap:balance;}
+  .hero .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);font-weight:600;margin:0 0 14px;}
+  .hero .lede{font-size:1.1rem;max-width:64ch;color:#4a4944;margin:16px 0 0;}
+  .hero .ps{font-size:.92rem;color:var(--ink-soft);max-width:58ch;margin:14px 0 0;}
+  .hero .signoff{font-style:italic;color:var(--ink-soft);margin-top:14px;font-size:1.02rem;}
+  .hero-cols{display:grid;grid-template-columns:1.5fr 1fr;gap:44px;align-items:center;}
+  @media(max-width:820px){.hero-cols{grid-template-columns:1fr;gap:26px;}}
+  .why-card{background:#fffdf8;border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:18px;box-shadow:var(--shadow);padding:30px 30px 24px;margin-top:14px;}
+  .why-card blockquote{margin:0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:1.45rem;line-height:1.45;color:#2f2e2a;}
+  .why-card .why-label{margin-top:18px;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-deep);}
+  @media(max-width:820px){.why-card{margin-top:4px;}.why-card blockquote{font-size:1.2rem;}}
+
+  /* ---------- gallery (justified, native aspect ratio, no crop) ---------- */
+  .gallery{margin:22px 0 4px;}
+  .gallery-shell{position:relative;}
+  .gallery-viewport{overflow:hidden;position:relative;}
+  .gallery-offset{will-change:transform;transition:transform .45s cubic-bezier(.22,.61,.36,1);}
+  .gallery-strip{display:flex;gap:12px;width:max-content;padding:4px 2px 14px;animation:toolkit-marquee 140s linear infinite;}
+  .gallery-shell:hover .gallery-strip{animation-play-state:paused;}
+  @keyframes toolkit-marquee{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+  .g-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.94);box-shadow:var(--shadow-sm);cursor:pointer;color:var(--ink);display:flex;align-items:center;justify-content:center;transition:border-color .18s ease,color .18s ease;font-family:inherit;font-size:24px;line-height:1;padding:0 0 3px;}
+  .g-arrow:hover{border-color:var(--gold);color:var(--gold-deep);}
+  .g-arrow.prev{left:10px;}
+  .g-arrow.next{right:10px;}
+  @media(max-width:600px){.g-arrow{width:36px;height:36px;font-size:20px;}}
+  @media(prefers-reduced-motion: reduce){
+    .gallery-viewport{overflow-x:auto;}
+    .gallery-strip{animation:none;width:auto;}
+    .gallery-offset{transition:none;}
+  }
+  .g-item{flex:0 0 auto;height:260px;scroll-snap-align:start;border-radius:14px;overflow:hidden;background:#fff;}
+  .g-item img{height:100%;width:auto;display:block;}
+  /* placeholder tiles keep native-ish aspect ratios, never cropped */
+  .g-ph{border-radius:14px;background:repeating-linear-gradient(135deg,#f0eadd,#f0eadd 12px,#ece4d4 12px,#ece4d4 24px);border:1px dashed #d9cdb4;display:flex;align-items:center;justify-content:center;color:#b6a986;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;text-align:center;padding:10px;height:260px;}
+  .g-ph.port{width:184px;} .g-ph.land{width:392px;} .g-ph.sq{width:260px;}
+  .gallery-note{font-size:.83rem;color:var(--ink-soft);margin-top:0;}
+
+  /* ---------- sticky pill nav ---------- */
+  .pillbar{position:sticky;top:0;z-index:40;background:rgba(247,243,236,.92);backdrop-filter:saturate(1.4) blur(8px);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+  .pillbar .wrap{display:flex;gap:9px;overflow-x:auto;padding:13px 22px;scrollbar-width:none;}
+  .pillbar .wrap::-webkit-scrollbar{display:none;}
+  .pill{flex:0 0 auto;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:100px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .18s ease;font-family:inherit;}
+  .pill:hover{border-color:var(--gold);}
+  .pill.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+  /* ---------- pillar sections ---------- */
+  .pillar{padding:44px 0 8px;scroll-margin-top:72px;}
+  .pillar-head{margin-bottom:22px;}
+  .pillar-head .emoji{font-size:1.7rem;}
+  .pillar-head h2{font-size:1.7rem;margin:6px 0 4px;font-weight:700;letter-spacing:-.01em;}
+  .pillar-head p{margin:0;color:var(--ink-soft);font-style:italic;max-width:60ch;}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:start;}
+  @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:600px){.grid{grid-template-columns:1fr;}}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;transition:transform .2s ease,box-shadow .2s ease;}
+  .card:hover{transform:translateY(-3px);box-shadow:var(--shadow);}
+  .card-photo-test{width:calc(100% + 44px);margin:-22px -22px 16px;border-radius:20px 20px 0 0;overflow:hidden;height:150px;position:relative;}
+  .card-photo-test img{width:100%;height:100%;object-fit:cover;}
+  .card-photo-test .tag{position:absolute;top:10px;right:10px;background:rgba(45,45,42,.85);color:#fff;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 9px;border-radius:100px;}
+  .card-top{display:flex;align-items:center;gap:13px;margin-bottom:12px;}
+  .mono{flex:0 0 auto;width:48px;height:48px;border-radius:14px;background:var(--tint);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;color:var(--ink);overflow:hidden;}
+  .mono img{width:38px;height:38px;object-fit:contain;}
+  .card h3{font-size:1.12rem;margin:0;font-weight:600;line-height:1.25;}
+  .card .flag{font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px;}
+  .tagline{font-weight:600;font-style:italic;color:#3c3b37;margin:0 0 8px;font-size:.98rem;}
+  .blurb{color:#55534d;font-size:.94rem;margin:0 0 16px;}
+  .collapse{margin:0 0 16px;border-top:1px solid var(--line);padding-top:12px;}
+  .collapse summary{cursor:pointer;font-weight:600;font-size:.9rem;color:var(--blue);list-style:none;display:flex;align-items:center;gap:6px;}
+  .collapse summary::-webkit-details-marker{display:none;}
+  .collapse summary::after{content:"＋";margin-left:auto;color:var(--ink-soft);font-weight:700;}
+  .collapse[open] summary::after{content:"–";}
+  .collapse ul{margin:12px 0 0;padding-left:2px;list-style:none;}
+  .collapse li{margin-bottom:12px;font-size:.9rem;color:#55534d;line-height:1.55;}
+  .collapse .stack-img{border-radius:12px;overflow:hidden;margin:12px 0 0;}
+  .collapse .stack-img img{width:100%;height:auto;display:block;}
+  .collapse p{margin:12px 0 0;font-size:.9rem;color:#55534d;line-height:1.55;}
+  .collapse .res-links{margin:14px 0 0;display:flex;flex-direction:column;gap:8px;}
+  .collapse .res-links a{font-size:.9rem;font-weight:600;}
+  .card-foot{margin-top:auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--gold);color:#3a2f00;font-weight:700;font-size:12px;padding:6px 12px;border-radius:100px;letter-spacing:.02em;}
+  .chip.soft{background:var(--tint);color:var(--ink);}
+  .btn{margin-left:auto;display:inline-flex;align-items:center;gap:7px;background:var(--blue);color:#fff;text-decoration:none;font-weight:600;font-size:13px;padding:10px 16px;border-radius:100px;transition:background .18s ease;}
+  .btn:hover{background:var(--blue-deep);}
+
+  /* ---------- footer ---------- */
+  .site-footer{margin-top:56px;background:#fff;border-top:1px solid var(--line);padding:36px 0 46px;}
+  .disclosure{font-size:.86rem;color:var(--ink-soft);max-width:70ch;font-style:italic;margin:0;}
+  .backlink{display:inline-block;margin-top:18px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;color:var(--ink);text-decoration:none;}
+  .backlink:hover{color:var(--gold-deep);}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="/" aria-label="Travel to Transform home"><img src="https://assets.cdn.filesafe.space/pIQnJdASBmjOuDSHEr5v/media/685d222dcbef07f7bef8082f.png" alt="Travel to Transform"></a>
+    <nav class="site-nav">
+      <a href="/about">About</a>
+      <a href="/speaking">Speaking</a>
+      <a href="/coaching">Coaching</a>
+      <a href="/course/tmb">Course</a>
+      <a href="/the-book">The Book</a>
+      <div class="nav-dd"><a href="/resources" class="active">Resources</a>
+        <div class="nav-dd-menu"><a href="/resources">Learning</a><a href="/resources/toolkit">My Travel Toolkit</a></div>
+      </div>
+      <a href="/appreciation">Appreciation</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-cols"><div><div class="crumb"><a href="/resources">Resources</a> › <b>My Travel Toolkit</b></div>
+    <p class="kicker">For the Body</p>
+    <h1>The tools, tech &amp; rituals I travel with</h1>
+    <p class="lede">This is what keeps me travelling further, feeling better and staying in my highest state anywhere in the world. I've spent almost a decade keeping myself optimised on the road, so what you'll find here isn't theory. It's the personal toolkit I've landed on after years of biohacking and honest trial and error, shared so you don't have to waste money testing as many options as I did. Where you see a code, consider it my gift to you &lt;3</p>
+    <p class="ps">P.S. New to optimising your wellbeing? Start small. No need to feel overwhelmed. One change at a time is enough.</p>
+    <p class="signoff">With love &amp; travel-spiration xx,<br>Freeman 🌏🪽</p></div><aside class="why-card"><blockquote>Travel well, so you have the energy to embrace the full spectrum of human experience.</blockquote><div class="why-label">The why behind the toolkit</div></aside></div>
+
+    <div class="gallery">
+      <div class="gallery-shell">
+      <button class="g-arrow prev" type="button" aria-label="Scroll gallery backwards">‹</button>
+      <button class="g-arrow next" type="button" aria-label="Scroll gallery forwards">›</button>
+      <div class="gallery-viewport"><div class="gallery-offset" id="galleryOffset"><div class="gallery-strip" id="gallery">
+<div class="g-item"><img src="/assets/toolkit-gallery/freeman-fung-biohacking-buddies-dubai-future-human-expo.jpg" alt="Freeman Fung with a biohacking friend at the Future Human Expo, Dubai" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/lumivitae-hydrogen-water-bottle-airplane-window-passport.jpg" alt="LumiVitae molecular hydrogen bottle beside an airplane window and Hong Kong passport" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/lumivitae-molecular-hydrogen-bottle-dubai-skyline-night.jpg" alt="LumiVitae hydrogen bottle glowing blue against the Dubai skyline at night" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/airestech-night-mode-flight-sleep-mask-travel-pillow.jpg" alt="Freeman Fung in night mode on an overnight flight with sleep mask and travel pillow" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/therabody-theragun-sleep-oasis-eye-mask-recovery-kit.jpg" alt="Therabody Theragun and Sleep Oasis eye mask recovery kit" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/truedark-twilight-glasses-blue-light-blocking-hotel-window.jpg" alt="TrueDark Twilight blue-light-blocking glasses held up against a night window" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/truedark-red-tinted-glasses-worn-on-flight-freeman-fung.jpg" alt="Freeman Fung wearing TrueDark red-tinted glasses on a flight" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/oura-ring-gen4-unboxing-with-plant.jpg" alt="Oura Ring unboxed on its packaging next to a houseplant" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/oura-ring-closeup-worn-on-finger.jpg" alt="Close-up of the Oura Ring worn on a finger" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/usana-healthiest-family-on-earth-boxes-freeman-fung-couple.jpg" alt="Freeman Fung and partner holding USANA Healthiest Family on Earth boxes" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/usana-circ-plus-supplement-box-myfitstrip.jpg" alt="USANA Circ+ sports supplement box held with a MyFitStrip tube" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/usana-healthpak-sachet-hong-kong-harbour-lumivitae-bottles.jpg" alt="USANA HealthPak sachet held up against the Hong Kong harbour skyline" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/life-cykel-yerba-mate-matcha-latte-reishi-lions-mane-mouth-mist.jpg" alt="Life Cykel Yerba Mate, Matcha Latte, Reishi+, Chaga+ and Lion's Mane+ mouth mists" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/sacred-taste-ceremonial-grade-cacao-tin-mountain-view.jpg" alt="Sacred Taste ceremonial-grade cacao tin held up with a mountain view behind" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/mihigh-portable-infrared-sauna-blanket-in-use.jpg" alt="MiHigh portable infrared sauna blanket in use" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/london-nootropics-flow-adaptogenic-coffee-sachet-city-view.jpg" alt="London Nootropics FLOW adaptogenic coffee sachet held up with a city view behind" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/london-nootropics-mojo-adaptogenic-coffee-sachet-airport.jpg" alt="London Nootropics MOJO adaptogenic coffee sachet held up at an airport gate" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/emr-tek-red-light-therapy-panel-meditation-session-freeman-fung.jpg" alt="Freeman Fung meditating during an EMR-TEK red light therapy session" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/sensai-neurofeedback-headset-unboxing-desk-setup.jpg" alt="Sens.ai neurofeedback headset unboxed on a desk setup" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/freeman-fung-sensai-neurofeedback-headset-meditation-session.jpg" alt="Freeman Fung wearing the Sens.ai neurofeedback headset during a meditation session" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/heartmath-emwave-pro-2-hrv-biofeedback-device-box.jpg" alt="HeartMath emWave Pro 2 HRV biofeedback device box" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/neptune-bed-acupressure-mat-barefoot-standing.jpg" alt="Standing barefoot on a Neptune Bed acupressure mat" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/normatec-compression-recovery-boots-freeman-fung.jpg" alt="Freeman Fung wearing Normatec compression recovery boots" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/freeman-fung-travel-biohacking-carry-on-packing-checklist.jpg" alt="Freeman Fung's packed carry-on with a travel biohacker packing checklist overlay" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/freeman-fung-biohacking-buddies-dubai-future-human-expo.jpg" alt="Freeman Fung with a biohacking friend at the Future Human Expo, Dubai" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/lumivitae-hydrogen-water-bottle-airplane-window-passport.jpg" alt="LumiVitae molecular hydrogen bottle beside an airplane window and Hong Kong passport" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/lumivitae-molecular-hydrogen-bottle-dubai-skyline-night.jpg" alt="LumiVitae hydrogen bottle glowing blue against the Dubai skyline at night" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/airestech-night-mode-flight-sleep-mask-travel-pillow.jpg" alt="Freeman Fung in night mode on an overnight flight with sleep mask and travel pillow" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/therabody-theragun-sleep-oasis-eye-mask-recovery-kit.jpg" alt="Therabody Theragun and Sleep Oasis eye mask recovery kit" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/truedark-twilight-glasses-blue-light-blocking-hotel-window.jpg" alt="TrueDark Twilight blue-light-blocking glasses held up against a night window" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/truedark-red-tinted-glasses-worn-on-flight-freeman-fung.jpg" alt="Freeman Fung wearing TrueDark red-tinted glasses on a flight" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/oura-ring-gen4-unboxing-with-plant.jpg" alt="Oura Ring unboxed on its packaging next to a houseplant" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/oura-ring-closeup-worn-on-finger.jpg" alt="Close-up of the Oura Ring worn on a finger" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/usana-healthiest-family-on-earth-boxes-freeman-fung-couple.jpg" alt="Freeman Fung and partner holding USANA Healthiest Family on Earth boxes" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/usana-circ-plus-supplement-box-myfitstrip.jpg" alt="USANA Circ+ sports supplement box held with a MyFitStrip tube" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/usana-healthpak-sachet-hong-kong-harbour-lumivitae-bottles.jpg" alt="USANA HealthPak sachet held up against the Hong Kong harbour skyline" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/life-cykel-yerba-mate-matcha-latte-reishi-lions-mane-mouth-mist.jpg" alt="Life Cykel Yerba Mate, Matcha Latte, Reishi+, Chaga+ and Lion's Mane+ mouth mists" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/sacred-taste-ceremonial-grade-cacao-tin-mountain-view.jpg" alt="Sacred Taste ceremonial-grade cacao tin held up with a mountain view behind" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/mihigh-portable-infrared-sauna-blanket-in-use.jpg" alt="MiHigh portable infrared sauna blanket in use" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/london-nootropics-flow-adaptogenic-coffee-sachet-city-view.jpg" alt="London Nootropics FLOW adaptogenic coffee sachet held up with a city view behind" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/london-nootropics-mojo-adaptogenic-coffee-sachet-airport.jpg" alt="London Nootropics MOJO adaptogenic coffee sachet held up at an airport gate" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/emr-tek-red-light-therapy-panel-meditation-session-freeman-fung.jpg" alt="Freeman Fung meditating during an EMR-TEK red light therapy session" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/sensai-neurofeedback-headset-unboxing-desk-setup.jpg" alt="Sens.ai neurofeedback headset unboxed on a desk setup" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/freeman-fung-sensai-neurofeedback-headset-meditation-session.jpg" alt="Freeman Fung wearing the Sens.ai neurofeedback headset during a meditation session" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/heartmath-emwave-pro-2-hrv-biofeedback-device-box.jpg" alt="HeartMath emWave Pro 2 HRV biofeedback device box" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/neptune-bed-acupressure-mat-barefoot-standing.jpg" alt="Standing barefoot on a Neptune Bed acupressure mat" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/normatec-compression-recovery-boots-freeman-fung.jpg" alt="Freeman Fung wearing Normatec compression recovery boots" loading="lazy"></div>
+<div class="g-item"><img src="/assets/toolkit-gallery/freeman-fung-travel-biohacking-carry-on-packing-checklist.jpg" alt="Freeman Fung's packed carry-on with a travel biohacker packing checklist overlay" loading="lazy"></div>
+</div></div></div>
+      </div>
+<p class="gallery-note">Photos from the road — the actual gear, in actual use.</p>
+    </div>
+  </div>
+</section>
+
+<div class="pillbar">
+  <div class="wrap" id="pills">
+    <button class="pill active" data-target="wellbeing">Travel Health &amp; Wellbeing</button>
+    <button class="pill" data-target="sleep">Light &amp; Sleep</button>
+    <button class="pill" data-target="cellular">Cellular Upgrade+</button>
+    <button class="pill" data-target="focus">Focus, Flow &amp; Rituals</button>
+    <button class="pill" data-target="recovery">Recovery</button>
+    <button class="pill" data-target="productivity">Productivity &amp; Second Brain</button>
+    <button class="pill" data-target="community">Community &amp; Courses</button>
+  </div>
+</div>
+
+<main class="wrap" id="sections">
+
+  <!-- 1 · WELLBEING -->
+  <section class="pillar" id="wellbeing">
+    <div class="pillar-head"><span class="emoji">🌍</span><h2>Travel Health &amp; Wellbeing</h2><p>The essentials that keep me well in transit: mind, body and energy field.</p></div>
+    <div class="grid">
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/brainfm.png" alt="Brain.fm" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">Bf</span></div><div><h3>Brain.fm</h3><div class="flag">1-month free trial</div></div></div>
+        <p class="tagline">My favourite functional music app, which I use daily to shift my brain state.</p>
+        <p class="blurb">It comes with relaxation, focus and sleep modes. I use sleep mode in the evening to fall asleep more easily, and focus mode for deep work on planes. The soundscapes are built with neuroscience to gently guide your brain into the state you want.</p>
+        <div class="card-foot"><span class="chip">Code · freeman</span><a class="btn" href="https://www.brain.fm/freeman" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/airestech.png" alt="Aires Tech" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">At</span></div><div><h3>Aires Tech</h3><div class="flag">25% off</div></div></div>
+        <p class="tagline">One of my secret weapons for staying optimised on flights, where the dirty EMF load is heaviest.</p>
+        <p class="blurb">This isn't an EMF blocker. Rather than simply blocking, it modulates chaotic EMF into a form your body handles far more easily, backed by EEG studies and 25+ clinical trials. It's trusted enough that Fiji Airways chose Aires to become the world's first EMF-friendly airline.</p>
+        <div class="card-foot"><span class="chip">Code · FREEMAN25</span><a class="btn" href="https://airestech.com/freemanfung" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/2xu.png" alt="2XU" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">2X</span></div><div><h3>Compression Socks (2XU)</h3><div class="flag">Non-affiliate</div></div></div>
+        <p class="tagline">My favourite affordable hack: if you don't already wear compression socks on flights, you're missing out.</p>
+        <p class="blurb">Short haul or long haul, they keep your blood moving and your legs fresh on travel days. I wear 2XU, an Australian brand, and look for the bamboo charcoal material for comfort and odour control. Not an affiliate, I just genuinely recommend them.</p>
+        <div class="card-foot"><span class="chip soft">Just a favourite</span><a class="btn" href="https://www.2xu.com" target="_blank" rel="noopener">Learn more</a></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 2 · SLEEP -->
+  <section class="pillar" id="sleep">
+    <div class="pillar-head"><span class="emoji">🌙</span><h2>Master Your Light Management &amp; Sleep</h2><p>Circadian health (i.e. your internal bioclock): beat jetlag, protect from junk light exposure and sleep deeply anywhere. Mastering time zones by mastering your internal rhythm.</p></div>
+    <div class="grid">
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/sleepoasis.png" alt="Sleep Oasis" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">So</span></div><div><h3>Sleep Oasis</h3><div class="flag">12% off · free shipping</div></div></div>
+        <p class="tagline">My go-to entry point for light hygiene, and the best travel eye mask I've ever tested.</p>
+        <p class="blurb">The DreamShade 3D blackout mask floats over your eyes with zero pressure and total darkness, perfect for flights and bright hotel rooms. Their amber blue-light glasses and relaxation gadgets are a beautiful, accessible place to start.</p>
+        <div class="card-foot"><span class="chip">Code · FREEMAN</span><a class="btn" href="https://thesleepoasis.com/FREEMAN" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/truedark.png" alt="TrueDark" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">Td</span></div><div><h3>TrueDark</h3><div class="flag">10% off · premium tier</div></div></div>
+        <p class="tagline">My premium pick for blue and junk-light defence, engineered by Dave Asprey, the father of biohacking.</p>
+        <p class="blurb">The Daylights use photochromic lenses that adapt automatically, blocking 75% of blue light indoors and 99% of UVA/UVB outdoors, so one pair takes you from screen to storefront to sunshine. The Twilights are for deep evening wind-down.</p>
+        <div class="card-foot"><span class="chip">Code · FREEMAN</span><a class="btn" href="https://truedark.com?sca_ref=10250573.rwDjp10eX4AOc" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/oura.png" alt="Oura Ring" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">Ou</span></div><div><h3>Oura Ring</h3><div class="flag">Personal referral</div></div></div>
+        <p class="tagline">The sleep tracker I've been wearing every day since 2021, from their Gen 1 release.</p>
+        <p class="blurb">While teaching body intelligence, I also LOVE quantifying my sleep stages, readiness, HRV and more into valuable insights I can act on, especially across time zones. I prefer it over Whoop and the Apple Watch because it's the least intrusive to wear in bed, and finger readings capture blood flow more accurately than the wrist. Not a paid affiliate, just a referral I share with friends.</p>
+        <div class="card-foot"><span class="chip soft">$50 off</span><a class="btn" href="https://ouraring.com/discount/cxappease50" target="_blank" rel="noopener">Learn more</a></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/apolloneuro.png" alt="Apollo Neuro" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">An</span></div><div><h3>Apollo Neuro</h3><div class="flag">Coming soon</div></div></div>
+        <p class="tagline">A wearable I'm genuinely excited about for gently retraining your nervous system toward calm, focus and deeper sleep.</p>
+        <p class="blurb">It uses soothing vibration to help you shift state, whether you're winding down before bed, settling after a long-haul flight or dropping into focus. I'm in the middle of applying to partner with them, so watch this space.</p>
+        <div class="card-foot"><span class="chip soft">Partnership pending</span></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 3 · CELLULAR -->
+  <section class="pillar" id="cellular">
+    <div class="pillar-head"><span class="emoji">🧬</span><h2>Cellular Upgrade+</h2><p>Cellular nutrition and hydration, the daily foundation for energy, recovery and longevity.</p></div>
+    <div class="grid">
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/usana.svg" alt="USANA" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">Us</span></div><div><h3>USANA Supplements</h3><div class="flag">Official brand partner</div></div></div>
+        <p class="tagline">My daily foundation for energy, recovery and longevity on the road, and the brand I love enough to become an official partner.</p>
+        <p class="blurb">USANA (which means &ldquo;true health&rdquo; in Greek) is the nutrition brand I trust above any other. After years of wasting money on supplements that didn't hold up, I landed on these: they own their own manufacturing (around 95% of brands don't), hold patented cellular-nutrition technology, and are trusted by hundreds of Olympic and world-class athletes. The link opens my own USANA store, one of my wellness businesses, so you're buying direct. Together, they're my daily upgrade for energy, longevity and recovery on the road.</p>
+        <details class="collapse">
+          <summary>What's in my daily pack</summary>
+          <ul>
+            <li><b>🧬 HealthPak</b> — grab-and-go multivitamin sachets made for life on the move.</li>
+            <li><b>💛 BiOmega (omega-3)</b> — the one everyone knows they need, made pure enough I actually trust it. Most omega-3s on the shelf are contaminated with heavy metals and you'd never know. (Trust me, I've done my HTMA test before and didn't like what I found from other brands.) USANA's quality control is world-class: independently verified and rigorously tested.</li>
+            <li><b>⚡ CoQuinone (CoQ10)</b> — the one I recommend most for a real energy lift. Your body makes less of it with age, and unless you're eating serious amounts of organ meat like beef heart, food alone won't top you up. A well-studied edge among elite and pro athletes, do your own research here. The biggest difference I feel is in my martial arts practice.</li>
+            <li><b>🌿 Stress Relief</b> — my travel staple for evening flights and the wind-down after a day of switching hotels and long commutes. A favourite Ayurvedic blend with ashwagandha to settle the nervous system back down.</li>
+            <li><b>✨ Celavive</b> — cellular-nutrition skincare for travel-stressed skin.</li>
+          </ul>
+        </details>
+        <details class="collapse">
+          <summary>See my full stack</summary>
+          <div class="stack-img"><img src="/assets/toolkit-gallery/usana-supplement-collection-healthpak-celavive-product-table.jpg" alt="USANA supplement collection including HealthPak and Celavive on a product table" loading="lazy"></div>
+          <div class="stack-img"><img src="/assets/toolkit-gallery/usana-full-supplement-stack-pantry-healthpak-collagen.jpg" alt="Freeman Fung's full USANA supplement stack including HealthPak, marine collagen and daily bottles" loading="lazy"></div>
+        </details>
+        <div class="card-foot"><a class="btn" href="https://freemanfung.usana.com" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/lumivitae.png" alt="LumiVitae" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">Lv</span></div><div><h3>LumiVitae</h3><div class="flag">Molecular Hydrogen Institute Certified</div></div></div>
+        <p class="tagline">The coolest biotech water bottle you'll often see me carrying, and the MHI-certified H₂ device I trust to travel with.</p>
+        <p class="blurb">Since I upgraded to drinking Molecular hydrogen (H₂), it's been a game-changer. If you haven't heard of H₂ before yet, it's the smallest molecule in existence, sometimes nicknamed the &ldquo;God molecule&rdquo;, and more than 2,000 scientific publications have explored its potential therapeutic use. Research is looking at antioxidant balance, inflammation, cellular protection, mitochondrial energy and muscle fatigue. The science got my attention, but how I feel is why I carry this travel-size device everywhere with me: more energy, clearer focus, faster recovery and less inflammation, especially when I'm travelling or training.</p>
+        <details class="collapse">
+          <summary>A note on investment</summary>
+          <p>This is one of the bigger investments on this page, so I won't pretend it's just another water bottle. For me, it earns its place because hydration is a daily foundation, not an occasional biohack. The adult body is roughly 60% water, and upgrading something I use every day made more sense than buying another gadget that stays at home. The research is promising and still developing, so explore it for yourself and decide whether it fits your own wellbeing journey.</p>
+          <div class="res-links">
+            <a href="https://youtu.be/I7BvYf1p3Zw" target="_blank" rel="noopener">Learn More about LumiVitae</a>
+            <a href="https://vimeo.com/896299126" target="_blank" rel="noopener">What's Inside the Box?</a>
+          </div>
+        </details>
+        <div class="card-foot"><a class="btn" href="https://freemanfung.lumivitae.com/" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 4 · FOCUS -->
+  <section class="pillar" id="focus">
+    <div class="pillar-head"><span class="emoji">🧠</span><h2>Focus, Flow &amp; Rituals</h2><p>Daily consumables and rituals for focus, energy and grounded presence.</p></div>
+    <div class="grid">
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/londonnootropics.png" alt="London Nootropics" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">Ln</span></div><div><h3>London Nootropics</h3><div class="flag">15% off</div></div></div>
+        <p class="tagline">My favourite adaptogenic coffee in travel sachets, for focus and calm without the jitters.</p>
+        <p class="blurb">Barista-style coffee blended with clinically studied adaptogens. I reach for Flow (Lion's Mane &amp; Rhodiola for clarity), Mojo (Cordyceps &amp; Siberian ginseng for stamina) and Zen (KSM-66 Ashwagandha &amp; L-theanine for calm). Bonus tip: Bring this with you and simply ask for hot water at a McCafe and you'd have the best coffee in any airport!</p>
+        <div class="card-foot"><span class="chip">Code · FREEMAN</span><a class="btn" href="https://www.londonnootropics.com/freeman" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/lifecykel.png" alt="Life Cykel" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">Lc</span></div><div><h3>Life Cykel</h3><div class="flag">10% off</div></div></div>
+        <p class="tagline">My morning ritual: a few drops of Australian Lion's Mane extract into my brew for flow.</p>
+        <p class="blurb">These double-extracted tinctures pair Lion's Mane with Kakadu Plum (the world's highest natural source of vitamin C) to support focus, memory and REM sleep. I add it to coffee, tea, smoothies or water.</p>
+        <div class="card-foot"><span class="chip">Code · FREEMAN10</span><a class="btn" href="https://www.lifecykel.com/?rfsn=8640694.88d607&utm_source=refersion&utm_medium=affiliate&utm_campaign=8640694.88d607" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/sacredtaste.png" alt="Sacred Taste" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">St</span></div><div><h3>Sacred Taste</h3><div class="flag">Ceremonial cacao</div></div></div>
+        <p class="tagline">My heart-opening ritual: raw, ceremonial-grade cacao from Peru, and the loveliest coffee alternative I've found.</p>
+        <p class="blurb">Ethically sourced, organic ceremonial cacao. The theobromine and magnesium create a calm, grounded, heart-led energy with no caffeine crash. It's my daily pause in a busy world.</p>
+        <div class="card-foot"><span class="chip">Code · FREEMAN10</span><a class="btn" href="https://sacredtaste.com/?ref=freeman" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/optimoz.png" alt="OptimOZ" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">Oz</span></div><div><h3>OptimOZ</h3><div class="flag">For the Biohackers in Australia</div></div></div>
+        <p class="tagline">My one-stop shop in Australia for the highest-quality biohacking supplies.</p>
+        <p class="blurb">My staple supplier for 5+ years. The only downside: it's so popular that some items go out of stock quickly.</p>
+        <div class="card-foot"><a class="btn" href="https://optimoz.com.au/?rfsn=7873968.8d0379&utm_source=refersion&utm_medium=affiliate&utm_campaign=7873968.8d0379" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 5 · RECOVERY -->
+  <section class="pillar" id="recovery">
+    <div class="pillar-head"><span class="emoji">💪</span><h2>Post-Trip &amp; Training Recovery</h2><p>Conscious tech that restores rather than depletes, after flights and after training.</p></div>
+    <div class="grid">
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/mihigh.png" alt="MiHigh" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">Mh</span></div><div><h3>MiHigh Infrared Sauna Blanket</h3></div></div>
+        <p class="tagline">My favourite way to pack a full infrared sauna into a suitcase, for recovery, a deep sweat and better sleep anywhere.</p>
+        <p class="blurb">A portable infrared sauna blanket trusted by UFC athletes. It boosts circulation, eases aches, supports melatonin and leaves me blissfully relaxed before bed.</p>
+        <div class="card-foot"><span class="chip">Code · FREEMAN84574</span><a class="btn" href="https://uk.mihigh.com/discount/FREEMAN84574" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/emrtek.png" alt="EMR-TEK" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">Et</span></div><div><h3>EMR-TEK</h3><div class="flag">35% off</div></div></div>
+        <p class="tagline">Light therapy machines with the correct wavelengths (because many don't have the right spectrum!) on red and near-infrared light for skin, recovery and circadian health.</p>
+        <p class="blurb">Zero-flicker, third-party-tested red and near-infrared panels that recharge your mitochondria, speed up muscle recovery, calm inflammation and support collagen. The founder built them on 30 years of personal use.</p>
+        <div class="card-foot"><span class="chip">Code · FREEMAN</span><a class="btn" href="https://www.emr-tek.com/FREEMAN28537" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/therabody.png" alt="Therabody" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">Tg</span></div><div><h3>Theragun (Therabody)</h3><div class="flag">Non-affiliate</div></div></div>
+        <p class="tagline">My go-to percussive recovery for tired muscles, at home and on the road.</p>
+        <p class="blurb">I use the Theragun Pro at home after workouts, and the Theragun Mini when I travel, since it's compact and perfect before an evening flight. Not an affiliate, just a long-time user.</p>
+        <div class="card-foot"><span class="chip soft">Just a favourite</span><a class="btn" href="https://www.therabody.com" target="_blank" rel="noopener">Learn more</a></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 6 · PRODUCTIVITY -->
+  <section class="pillar" id="productivity">
+    <div class="pillar-head"><span class="emoji">💻</span><h2>Productivity &amp; Second Brain</h2><p>The behind-the-scenes tools that help me do less and achieve more on the go.</p></div>
+    <div class="grid">
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/wisprflow.png" alt="Wispr Flow" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">Wf</span></div><div><h3>Wispr Flow</h3><div class="flag">1 month Pro free</div></div></div>
+        <p class="tagline">My favourite productivity tool: I just talk, and it turns my voice into text anywhere.</p>
+        <p class="blurb">I use it to dictate, talk to AI, draft messages and even vibe-code on the go, simply by speaking to my phone. Its accuracy is far ahead of other dictation tools, and it's one of my behind-the-scenes secrets for doing less while achieving more on the road.</p>
+        <div class="card-foot"><span class="chip">Code · FREEMAN40</span><a class="btn" href="https://wisprflow.ai/r?FREEMAN40" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/notion.png" alt="Notion" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">No</span></div><div><h3>Notion</h3><div class="flag">Free</div></div></div>
+        <p class="tagline">My second brain, holding every note and travel checklist across my phone and laptop, anytime.</p>
+        <p class="blurb">I run my whole digital life inside Notion, and it's free. My second brain syncs across laptop and phone, so every note, idea and travel checklist is there whenever I need it.</p>
+        <div class="card-foot"><span class="chip soft">Free</span><a class="btn" href="https://www.notion.com" target="_blank" rel="noopener">Learn more</a></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 7 · COMMUNITY -->
+  <section class="pillar" id="community">
+    <div class="pillar-head"><span class="emoji">🌱</span><h2>Other Community &amp; Courses</h2><p>The platforms and communities that grow your inner world and your freedom lifestyle.</p></div>
+    <div class="grid">
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/skool.png" alt="Skool" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">9-5</span></div><div><h3>From 9-5 to Digital Nomad</h3><div class="flag">7-day free trial</div></div></div>
+        <p class="tagline">Where I'd point you if you're looking for a remote job or support through a career transition toward a life of freedom.</p>
+        <p class="blurb">My collaborator and global-citizen brother Markos Korvesis runs this community for remote work, freelancing and LinkedIn. He's an esteemed career coach who has helped thousands of remote workers worldwide, and co-founded world-leading nomad summits where I've spoken and served.</p>
+        <div class="card-foot"><span class="chip">7-day free trial</span><a class="btn" href="https://www.skool.com/from-9-5-to-digital-nomad/about?ref=7213309044cb4de081ed05c908e506d7" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/mindvalley.png" alt="Mindvalley" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">Mv</span></div><div><h3>Mindvalley</h3><div class="flag">USD$100 off</div></div></div>
+        <p class="tagline">The personal growth platform where my own transformation began.</p>
+        <p class="blurb">If you've followed my journey, you know how instrumental Mindvalley has been in transforming my life, and it's why I trained as a certified life coach and hypnotherapist. An affordable subscription, world-class teachers, and digestible lessons across personal growth and spirituality that traditional education never taught us.</p>
+        <div class="card-foot"><span class="chip">USD$100 off</span><a class="btn" href="https://join.mindvalley.com/r/6GI9olUJMhqj" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+      <article class="card">
+        <div class="card-top"><div class="mono"><img src="/assets/logos/businesslaunch.png" alt="Business Launch Community" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">BL</span></div><div><h3>The Bootstrap Entrepreneur</h3></div></div>
+        <p class="tagline">For specifically non-tech founders ready to put the right business systems in place, faster.</p>
+        <p class="blurb">I met Cris Vinson as a fellow speaker at the Vietnam Nomad Festival 2025, then hired him and his former agency to help fast-track my own business building and AI systems. I later also joined his Business Launch Challenge cohort and got immense value from it. If building a business is where you're at on your freedom journey, especially as a non-tech solopreneur who values time freedom, I highly recommend investing in building this foundation too.</p>
+        <div class="card-foot"><a class="btn" href="https://nas.com/businesslaunchcommunity/courses/bootstrap-mba-foundations?affiliateCode=FREEMAN_Z2S5" target="_blank" rel="noopener sponsored">Learn more</a></div>
+      </article>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="disclosure"><b>A note on affiliate links:</b> this page includes affiliate links. If you purchase through them I may earn a small commission, at no extra cost to you, and only ever for things I genuinely use and believe in. Where you see a code, consider it my gift to you.</p>
+    <a class="backlink" href="/resources">← Back to Resources</a>
+  </div>
+</footer>
+
+<script>
+(function(){
+  // gallery arrows: the CSS keyframe marquee keeps auto-scrolling on the strip,
+  // while manual nudges apply a separate transform on the offset wrapper.
+  // Nested transforms compose, and jumping the offset by exactly half the strip
+  // width is invisible (the content repeats), which keeps the loop seamless.
+  var vp = document.querySelector('.gallery-viewport');
+  var offEl = document.getElementById('galleryOffset');
+  var strip = document.getElementById('gallery');
+  var prev = document.querySelector('.g-arrow.prev');
+  var next = document.querySelector('.g-arrow.next');
+  if(vp && offEl && strip && prev && next){
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduced){
+      // no auto-scroll; arrows drive the native scroll fallback
+      prev.addEventListener('click', function(){ vp.scrollBy({left:-440, behavior:'smooth'}); });
+      next.addEventListener('click', function(){ vp.scrollBy({left:440, behavior:'smooth'}); });
+    } else {
+      var pending = 0, timer = null;
+      var setOff = function(x, instant){
+        if(instant){ offEl.style.transition = 'none'; }
+        offEl.style.transform = 'translateX(' + x + 'px)';
+        if(instant){ void offEl.offsetHeight; offEl.style.transition = ''; }
+      };
+      var matX = function(el){
+        var m = getComputedStyle(el).transform;
+        if(m && m !== 'none'){
+          var p = m.match(/-?[\d.]+/g);
+          return parseFloat(p[4]) || 0;
+        }
+        return 0;
+      };
+      // After the ease settles, fold the shift into the marquee's own timeline
+      // (animation-delay) and zero the wrapper in the same frame. The two jumps
+      // cancel exactly, and with the wrapper back at rest the keyframe loop's
+      // own seamless wrap keeps the strip on-content forever.
+      var bake = function(){
+        timer = null;
+        var h = strip.scrollWidth / 2;
+        if(!h){ pending = 0; setOff(0, true); return; }
+        var d = parseFloat(strip.style.animationDelay) || 0;
+        d = d + 140 * pending / h;
+        // shifting by whole 140s periods is identity; keep the delay negative
+        // (in the past) so the animation is always mid-run, never pending
+        d = (d % 140) - 1400;
+        strip.style.animationDelay = d + 's';
+        setOff(0, true);
+        pending = 0;
+      };
+      var nudge = function(delta){
+        var h = strip.scrollWidth / 2;
+        if(!h){ return; }
+        var M = matX(strip);
+        var target = pending + delta;
+        // wrap invisibly (jumps of exactly h repeat the content) so the combined
+        // translate stays on-content during the brief transient before the bake
+        while(target + M > -8){ setOff(matX(offEl) - h, true); target -= h; }
+        while(target + M < -(2 * h - vp.clientWidth) + 8){ setOff(matX(offEl) + h, true); target += h; }
+        pending = target;
+        setOff(pending, false);
+        if(timer){ clearTimeout(timer); }
+        timer = setTimeout(bake, 520);
+      };
+      prev.addEventListener('click', function(){ nudge(440); });
+      next.addEventListener('click', function(){ nudge(-440); });
+    }
+  }
+
+  var pills = document.querySelectorAll('.pill');
+  var sections = document.querySelectorAll('.pillar');
+  pills.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var t = document.getElementById(btn.getAttribute('data-target'));
+      if(t){ window.scrollTo({top: t.offsetTop - 66, behavior:'smooth'}); }
+    });
+  });
+  // scroll-spy: highlight the pill of the section currently in view
+  var spy = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        var id = e.target.id;
+        pills.forEach(function(p){ p.classList.toggle('active', p.getAttribute('data-target')===id); });
+      }
+    });
+  }, {rootMargin:'-45% 0px -50% 0px'});
+  sections.forEach(function(s){ spy.observe(s); });
+})();
+</script>
+</body>
+</html>
