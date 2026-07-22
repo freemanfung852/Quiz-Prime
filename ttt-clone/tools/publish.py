@@ -66,7 +66,7 @@ CATS = {  # categoryId: (label, blogId, listing page)
 MANUAL_POSTS = {
     "6878c4aaf07aa601cf0236d1": [{
         "_id": "manual-beyonder", "urlSlug": "beyonder-the-podcast-with-veerle-beelen",
-        "title": "Beyonder The Podcast with Veerle Beelen",
+        "title": "From Tourist to Global Citizen | Beyonder The Podcast with Veerle Beelen",
         "description": "Tourist or Global Citizen? Freeman Fung on Beyonder The Podcast with Veerle Beelen.",
         "imageUrl": "/assets/podcast/beyonder-the-podcast-freeman-fung-veerle-beelen-tourist-or-global-citizen.png",
         "imageAltText": "Beyonder The Podcast with Veerle Beelen",
