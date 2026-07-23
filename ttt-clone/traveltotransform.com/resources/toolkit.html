@@ -7,6 +7,7 @@
 <meta name="description" content="The tools, tech and rituals Freeman Fung genuinely uses to travel further, feel better and stay in his highest state anywhere in the world. A curated wellbeing &amp; biohacking toolkit for travellers.">
 <meta name="title" content="My Travel Toolkit — Travel Wellbeing &amp; Resources | Travel to Transform">
 <link rel="canonical" href="https://traveltotransform.com/resources/toolkit">
+<link rel="icon" href="https://storage.googleapis.com/msgsndr/pIQnJdASBmjOuDSHEr5v/media/687c9ccbe36c1580ec1b2ea4.png">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://traveltotransform.com/resources/toolkit">
 <meta property="og:title" content="My Travel Toolkit — Travel Wellbeing &amp; Resources">
@@ -69,7 +70,8 @@
   .gallery-viewport{overflow:hidden;position:relative;}
   .gallery-offset{will-change:transform;transition:transform .45s cubic-bezier(.22,.61,.36,1);}
   .gallery-strip{display:flex;gap:12px;width:max-content;padding:4px 2px 14px;animation:toolkit-marquee 140s linear infinite;}
-  .gallery-shell:hover .gallery-strip{animation-play-state:paused;}
+  /* pause-on-hover only where hover is real; on touch the tap-hover sticks and would freeze the marquee */
+  @media(hover:hover){.gallery-shell:hover .gallery-strip{animation-play-state:paused;}}
   @keyframes toolkit-marquee{from{transform:translateX(0);}to{transform:translateX(-50%);}}
   .g-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.94);box-shadow:var(--shadow-sm);cursor:pointer;color:var(--ink);display:flex;align-items:center;justify-content:center;transition:border-color .18s ease,color .18s ease;font-family:inherit;font-size:24px;line-height:1;padding:0 0 3px;}
   .g-arrow:hover{border-color:var(--gold);color:var(--gold-deep);}
@@ -265,7 +267,7 @@
       <article class="card">
         <div class="card-top"><div class="mono"><img src="/assets/logos/2xu.png" alt="2XU" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">2X</span></div><div><h3>Compression Socks (2XU)</h3><div class="flag">Non-affiliate</div></div></div>
         <p class="tagline">My favourite affordable hack: if you don't already wear compression socks on flights, you're missing out.</p>
-        <p class="blurb">Short haul or long haul, they keep your blood moving and your legs fresh on travel days. I wear 2XU, an Australian brand, and look for the bamboo charcoal material for comfort and odour control. Not an affiliate, I just genuinely recommend them.</p>
+        <p class="blurb">Short haul or long haul, they keep your blood moving and your legs fresh on travel days. I wear 2XU, an Australian brand, and look for the bamboo charcoal material for comfort and odour control. Not an affiliate, I just genuinely like them.</p>
         <div class="card-foot"><span class="chip soft">Just a favourite</span><a class="btn" href="https://www.2xu.com" target="_blank" rel="noopener">Learn more</a></div>
       </article>
     </div>
@@ -289,7 +291,7 @@
       </article>
       <article class="card">
         <div class="card-top"><div class="mono"><img src="/assets/logos/oura.png" alt="Oura Ring" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">Ou</span></div><div><h3>Oura Ring</h3><div class="flag">Personal referral</div></div></div>
-        <p class="tagline">The sleep tracker I've been wearing every day since 2021, from their Gen 1 release.</p>
+        <p class="tagline">The sleep tracker I've been wearing every day since 2021 with their Gen 1 ring.</p>
         <p class="blurb">While teaching body intelligence, I also LOVE quantifying my sleep stages, readiness, HRV and more into valuable insights I can act on, especially across time zones. I prefer it over Whoop and the Apple Watch because it's the least intrusive to wear in bed, and finger readings capture blood flow more accurately than the wrist. Not a paid affiliate, just a referral I share with friends.</p>
         <div class="card-foot"><span class="chip soft">$50 off</span><a class="btn" href="https://ouraring.com/discount/cxappease50" target="_blank" rel="noopener">Learn more</a></div>
       </article>
@@ -351,7 +353,7 @@
       <article class="card">
         <div class="card-top"><div class="mono"><img src="/assets/logos/londonnootropics.png" alt="London Nootropics" loading="lazy" width="38" height="38" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">Ln</span></div><div><h3>London Nootropics</h3><div class="flag">15% off</div></div></div>
         <p class="tagline">My favourite adaptogenic coffee in travel sachets, for focus and calm without the jitters.</p>
-        <p class="blurb">Barista-style coffee blended with clinically studied adaptogens. I reach for Flow (Lion's Mane &amp; Rhodiola for clarity), Mojo (Cordyceps &amp; Siberian ginseng for stamina) and Zen (KSM-66 Ashwagandha &amp; L-theanine for calm). Bonus tip: Bring this with you and simply ask for hot water at a McCafe and you'd have the best coffee in any airport!</p>
+        <p class="blurb">Barista-style coffee blended with clinically studied adaptogens. I reach for Flow (Lion's Mane &amp; Rhodiola for clarity), Mojo (Cordyceps &amp; Siberian ginseng for stamina) and Zen (KSM-66 Ashwagandha &amp; L-theanine for calm). Bonus tip: Bring this with you and simply ask for hot water at a McCafé and you'd have the best coffee in any airport!</p>
         <div class="card-foot"><span class="chip">Code · FREEMAN</span><a class="btn" href="https://www.londonnootropics.com/freeman" target="_blank" rel="noopener sponsored">Learn more</a></div>
       </article>
       <article class="card">
