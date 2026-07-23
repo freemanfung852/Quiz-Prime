@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": false,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/", "destination": "/traveltotransform.com/index.html" },
+    { "source": "/post/:slug", "destination": "/traveltotransform.com/post/:slug.html" },
+    { "source": "/course/:slug", "destination": "/traveltotransform.com/course/:slug.html" },
+    { "source": "/:page", "destination": "/traveltotransform.com/:page.html" }
+  ]
+}
